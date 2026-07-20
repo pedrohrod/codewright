@@ -1,0 +1,6 @@
+# Codewright Refactor customization
+
+[refactor]
+incremental = true
+safety_tests_first = true
+patterns = ["Strategy", "Factory", "Builder", "Observer", "Adapter", "Decorator", "Command", "Template Method", "Dependency Injection"]

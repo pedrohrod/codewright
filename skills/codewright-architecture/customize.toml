@@ -1,0 +1,5 @@
+# Codewright Architecture customization
+
+[workflow]
+architecture_filename = "architecture.md"
+ad_prefix = "AD"

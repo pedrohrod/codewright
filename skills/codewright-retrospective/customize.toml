@@ -1,0 +1,10 @@
+# Codewright Retrospective customization
+
+[retrospective]
+questions = [
+  "What went well?",
+  "What could be improved?",
+  "What was unexpected?",
+  "What blockers did we hit?"
+]
+output_format = "markdown"

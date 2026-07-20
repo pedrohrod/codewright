@@ -1,0 +1,6 @@
+# Codewright Document customization
+
+[document]
+formats = ["jsdoc", "tsdoc", "readme", "api"]
+auto_update = false
+inline_examples = true

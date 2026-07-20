@@ -1,0 +1,6 @@
+# Codewright Quick Dev customization
+
+[quick_dev]
+auto_test = true
+auto_commit = false
+strict_tdd = false

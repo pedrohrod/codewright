@@ -1,0 +1,5 @@
+# Codewright Review customization
+
+[workflow]
+reviewers = ["Blind Hunter", "Edge Case Hunter", "Acceptance Auditor"]
+triage_levels = ["High", "Medium", "Low"]

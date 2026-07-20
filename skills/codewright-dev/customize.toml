@@ -1,0 +1,6 @@
+# Codewright Dev customization
+
+[workflow]
+tdd_mode = true
+auto_commit = false
+test_framework = "auto"

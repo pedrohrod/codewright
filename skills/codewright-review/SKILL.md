@@ -11,7 +11,7 @@ When the user says: "codewright review", "review", "code review", "review story"
 ## Operation
 <workflow>
   <step n="1" goal="Prepare review">
-    <action>Run: `npx codewright review prepare --spec <name> --story <id>`</action>
+    <action>Run: `npx codewright review <name> <id>`</action>
     <action>Generates diff from baseline_commit to HEAD and creates review file</action>
   </step>
   <step n="2" goal="Run parallel review (3 subagents)">

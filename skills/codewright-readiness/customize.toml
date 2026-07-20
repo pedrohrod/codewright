@@ -1,0 +1,6 @@
+# Codewright Readiness customization
+
+[readiness]
+min_io_matrix_scenarios = 3
+required_fields = ["id", "spec", "Intent", "I/O Matrix", "Code Map", "Tasks"]
+strict_mode = false

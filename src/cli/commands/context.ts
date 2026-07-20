@@ -1,14 +1,37 @@
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadConfig } from "../../config/loader.js";
 import { writeArtifact } from "../../artifacts/writer.js";
+
+const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rs", ".java", ".rb", ".php"];
+
+function scanDirectory(dir: string, prefix: string = ""): string[] {
+  const results: string[] = [];
+  if (!existsSync(dir)) return results;
+
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.name.startsWith(".") || entry.name === "node_modules" || entry.name === "dist" || entry.name === ".codewright-output") continue;
+      if (entry.isDirectory()) {
+        results.push(...scanDirectory(resolve(dir, entry.name), rel));
+      } else if (SOURCE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) {
+        results.push(`  - ${rel}`);
+      }
+    }
+  } catch {
+    // skip unreadable dirs
+  }
+  return results;
+}
 
 export function contextGenerateCommand(cwd: string) {
   const config = loadConfig(cwd);
 
   const sections: string[] = [];
 
-  // Technology Stack
+  // 1. Technology Stack
   const pkgPath = resolve(cwd, "package.json");
   if (existsSync(pkgPath)) {
     const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
@@ -21,37 +44,92 @@ export function contextGenerateCommand(cwd: string) {
 - **Name:** ${pkg.name || "unknown"}
 - **Version:** ${pkg.version || "0.0.0"}
 - **Stack:** ${config.stack}
+- **Framework:** ${config.framework || "unknown"}
+- **Test Runner:** ${config.test_runner || "unknown"}
+- **Lint Tools:** ${(config.lint_tools || []).join(", ") || "none"}
 - **Dependencies:\n${depList}`);
   }
 
-  // Project Structure
-  const srcPath = resolve(cwd, "src");
-  if (existsSync(srcPath)) {
-    const modules = readdirSync(srcPath, { recursive: true })
-      .filter((f: string) => f.endsWith(".ts") || f.endsWith(".tsx"))
-      .map((f: string) => `  - src/${f}`)
-      .join("\n");
-
-    sections.push(`## Project Structure
-  src/
-${modules}`);
+  // 2. Project Structure (all source dirs)
+  const srcDirs = ["src", "app", "lib", "components", "pages", "api", "server", "client"];
+  const structureLines: string[] = [];
+  for (const dir of srcDirs) {
+    const fullPath = resolve(cwd, dir);
+    if (existsSync(fullPath)) {
+      const files = scanDirectory(fullPath, dir);
+      structureLines.push(...files);
+    }
   }
 
-  // AGENTS.md rules
+  if (structureLines.length > 0) {
+    sections.push(`## Project Structure\n${structureLines.join("\n")}`);
+  }
+
+  // 3. Config files detected
+  const configFiles = [
+    { path: "tsconfig.json", label: "TypeScript Config" },
+    { path: ".eslintrc", label: "ESLint" },
+    { path: ".eslintrc.json", label: "ESLint" },
+    { path: ".eslintrc.js", label: "ESLint" },
+    { path: ".prettierrc", label: "Prettier" },
+    { path: ".prettierrc.json", label: "Prettier" },
+    { path: "vitest.config.ts", label: "Vitest" },
+    { path: "vitest.config.js", label: "Vitest" },
+    { path: "jest.config.ts", label: "Jest" },
+    { path: "jest.config.js", label: "Jest" },
+    { path: "docker-compose.yml", label: "Docker Compose" },
+    { path: "docker-compose.yaml", label: "Docker Compose" },
+    { path: "Dockerfile", label: "Docker" },
+    { path: "Makefile", label: "Make" },
+    { path: ".env.example", label: "Environment Variables" },
+    { path: "biome.json", label: "Biome" },
+  ];
+
+  const foundConfigs = configFiles
+    .filter((cf) => existsSync(resolve(cwd, cf.path)))
+    .map((cf) => `  - ${cf.label} (${cf.path})`);
+
+  if (foundConfigs.length > 0) {
+    sections.push(`## Configuration & Tooling\n${foundConfigs.join("\n")}`);
+  }
+
+  // 4. Environment variables (from .env.example)
+  const envPath = resolve(cwd, ".env.example");
+  if (existsSync(envPath)) {
+    const envContent = readFileSync(envPath, "utf-8")
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("#"))
+      .map((l) => `  - ${l.split("=")[0].trim()}`)
+      .join("\n");
+    if (envContent) {
+      sections.push(`## Environment Variables\n${envContent}`);
+    }
+  }
+
+  // 5. Critical Rules (from AGENTS.md)
   const agentsPath = resolve(cwd, ".codewright", "AGENTS.md");
   if (existsSync(agentsPath)) {
     const rules = readFileSync(agentsPath, "utf-8");
     sections.push(`## Critical Rules\n${rules}`);
   }
 
-  // Config
+  // 6. Config summary
+  const lintTools = (config.lint_tools || []).join(", ");
   sections.push(`## Configuration
 - **Project:** ${config.project_name}
 - **Stack:** ${config.stack}
+- **Framework:** ${config.framework || "-"}
 - **Language:** ${config.communication_language}
+- **Test Runner:** ${config.test_runner || "-"}
+- **Lint Tools:** ${lintTools || "-"}
+- **Strict Mode:** ${config.strict_mode !== undefined ? String(config.strict_mode) : "unknown"}
 - **Output:** ${config.output_folder}`);
 
-  const content = `# Project Context\n\n${sections.join("\n\n")}\n`;
+  const content = `# Project Context
+
+> Auto-generated by codewright. Update with \`codewright context generate\`.
+
+${sections.join("\n\n")}\n`;
 
   const path = writeArtifact({
     cwd,

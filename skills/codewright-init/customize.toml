@@ -1,0 +1,7 @@
+# Codewright Init customization
+# These fields can be overridden in .codewright/custom/codewright-init.toml
+
+[workflow]
+skills_dir = ".agents/skills"
+config_dir = ".codewright"
+output_dir = ".codewright-output"

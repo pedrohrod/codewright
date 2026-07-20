@@ -15,7 +15,7 @@ When the user says: "codewright dev", "implement story", "start story", "dev sta
     <action>Confirm understanding: Intent, I/O Matrix, Code Map, Tasks</action>
   </step>
   <step n="2" goal="Start the story">
-    <action>Run: `npx codewright dev start --spec <name> --story <id>`</action>
+    <action>Run: `npx codewright dev <name> <id>`</action>
     <action>This marks the story as in-progress and records the baseline_commit</action>
   </step>
   <step n="3" goal="Implement RED phase">
@@ -38,4 +38,4 @@ When the user says: "codewright dev", "implement story", "start story", "dev sta
 </workflow>
 
 ## Finalization
-Story implemented. Status remains "in-progress". User should run `codewright review prepare --spec <name> --story <id>` for review.
+Story implemented. Status remains "in-progress". User should run `codewright review <name> <id>` for review.

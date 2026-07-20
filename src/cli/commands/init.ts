@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../../config/loader.js";
@@ -7,7 +7,7 @@ import { contextGenerateCommand } from "./context.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Skills directory inside the installed package: skills/<name>/SKILL.md
+// Skills directory inside the installed package
 const PACKAGE_SKILLS_DIR = resolve(__dirname, "../../skills");
 
 const SKILL_NAMES = [
@@ -17,34 +17,142 @@ const SKILL_NAMES = [
   "codewright-story",
   "codewright-dev",
   "codewright-review",
+  "codewright-quality",
+  "codewright-test",
+  "codewright-refactor",
+  "codewright-readiness",
+  "codewright-quick-dev",
+  "codewright-document",
+  "codewright-retrospective",
 ];
+
+interface DetectedStack {
+  framework?: string;
+  test_runner?: string;
+  lint_tools: string[];
+  project_language?: string;
+  strict_mode?: boolean;
+}
+
+function detectProjectStack(targetDir: string): DetectedStack {
+  const detected: DetectedStack = { lint_tools: [] };
+  const pkgPath = resolve(targetDir, "package.json");
+
+  if (!existsSync(pkgPath)) {
+    // Check for other languages
+    if (existsSync(resolve(targetDir, "requirements.txt")) || existsSync(resolve(targetDir, "setup.py")) || existsSync(resolve(targetDir, "pyproject.toml"))) {
+      detected.project_language = "python";
+      detected.framework = "python";
+    } else if (existsSync(resolve(targetDir, "go.mod"))) {
+      detected.project_language = "go";
+      detected.framework = "go";
+    }
+    return detected;
+  }
+
+  detected.project_language = "javascript";
+
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>;
+    const allDeps = Object.keys(deps);
+
+    // Detect framework
+    if (allDeps.some((d) => d === "next" || d.startsWith("next-"))) detected.framework = "next";
+    else if (allDeps.some((d) => d === "react" || d.startsWith("react-"))) detected.framework = "react";
+    else if (allDeps.some((d) => d === "vue" || d.startsWith("vue-"))) detected.framework = "vue";
+    else if (allDeps.some((d) => d === "express" || d.startsWith("express-"))) detected.framework = "express";
+    else if (allDeps.some((d) => d === "nest" || d.startsWith("@nestjs/"))) detected.framework = "nestjs";
+    else if (allDeps.some((d) => d === "svelte" || d.startsWith("@sveltejs/"))) detected.framework = "svelte";
+    else if (allDeps.includes("typescript")) detected.project_language = "typescript";
+
+    // Detect test runner
+    if (allDeps.some((d) => d.includes("vitest"))) detected.test_runner = "vitest";
+    else if (allDeps.some((d) => d.includes("jest"))) detected.test_runner = "jest";
+    else if (allDeps.some((d) => d.includes("mocha"))) detected.test_runner = "mocha";
+    else if (allDeps.some((d) => d.includes("playwright"))) detected.test_runner = "playwright";
+    else if (allDeps.some((d) => d.includes("cypress"))) detected.test_runner = "cypress";
+
+    // Detect lint tools
+    if (allDeps.some((d) => d.includes("eslint"))) detected.lint_tools.push("eslint");
+    if (allDeps.some((d) => d.includes("prettier"))) detected.lint_tools.push("prettier");
+    if (allDeps.some((d) => d.includes("biome"))) detected.lint_tools.push("biome");
+    if (allDeps.some((d) => d.includes("stylelint"))) detected.lint_tools.push("stylelint");
+  } catch {
+    // ignore parse errors
+  }
+
+  // TypeScript strict mode
+  const tsconfigPath = resolve(targetDir, "tsconfig.json");
+  if (existsSync(tsconfigPath)) {
+    detected.project_language = "typescript";
+    try {
+      const tsconfig = JSON.parse(readFileSync(tsconfigPath, "utf-8"));
+      detected.strict_mode = tsconfig.compilerOptions?.strict === true;
+    } catch {
+      // ignore
+    }
+  }
+
+  return detected;
+}
 
 export function initCommand(cwd: string, dir?: string) {
   const targetDir = dir ? resolve(cwd, dir) : cwd;
   const codewrightDir = resolve(targetDir, ".codewright");
   const outputDir = resolve(targetDir, ".codewright-output");
   const agentsSkillsDir = resolve(targetDir, ".agents", "skills");
+  const customDir = resolve(codewrightDir, "custom");
 
-  // Create .codewright and .codewright-output directories
-  for (const d of [codewrightDir, outputDir, agentsSkillsDir]) {
+  // Create directories
+  for (const d of [codewrightDir, outputDir, agentsSkillsDir, customDir]) {
     if (!existsSync(d)) mkdirSync(d, { recursive: true });
   }
 
-  // Create config.yaml
+  // Auto-detect project stack
+  const detected = detectProjectStack(targetDir);
+
+  // Create .gitkeep in custom/
+  const gitkeepPath = resolve(customDir, ".gitkeep");
+  if (!existsSync(gitkeepPath)) writeFileSync(gitkeepPath, "", "utf-8");
+
+  // Create config.yaml with detected values
   const configPath = resolve(codewrightDir, "config.yaml");
   if (!existsSync(configPath)) {
     const config = loadConfig(cwd);
+    const framework = detected.framework ? `\nframework: "${detected.framework}"` : "";
+    const testRunner = detected.test_runner ? `\ntest_runner: "${detected.test_runner}"` : "";
+    const lintTools = detected.lint_tools.length > 0
+      ? `\nlint_tools: [${detected.lint_tools.map((t) => `"${t}"`).join(", ")}]`
+      : "";
+    const lang = detected.project_language ? `\nproject_language: "${detected.project_language}"` : "";
+    const strict = detected.strict_mode !== undefined ? `\nstrict_mode: ${detected.strict_mode}` : "";
+
     const yaml = `codewright_version: "${config.codewright_version}"
 project_name: "${resolve(targetDir).split("/").pop() || "my-project"}"
-stack: "node"
+stack: "${detected.framework || "node"}"
 communication_language: "en"
 output_folder: ".codewright-output"
-context_file: ".codewright-output/project-context.md"
+context_file: ".codewright-output/project-context.md"${framework}${testRunner}${lintTools}${lang}${strict}
 `;
     writeFileSync(configPath, yaml, "utf-8");
   }
 
-  // Create AGENTS.md (English)
+  // Create config.user.yaml (overrides, gitignored)
+  const userConfigPath = resolve(codewrightDir, "config.user.yaml");
+  if (!existsSync(userConfigPath)) {
+    const userYaml = `# User config overrides — not committed to git
+# Add this line to .gitignore: .codewright/config.user.yaml
+# Settings here override .codewright/config.yaml
+#
+# Example:
+# communication_language: "en"
+# project_name: "my-project-override"
+`;
+    writeFileSync(userConfigPath, userYaml, "utf-8");
+  }
+
+  // Create AGENTS.md
   const agentsPath = resolve(codewrightDir, "AGENTS.md");
   if (!existsSync(agentsPath)) {
     const agents = `# Codewright Agent Instructions
@@ -56,8 +164,13 @@ This project uses Codewright for assisted development.
 1. Idea → run \`codewright:spec\`
 2. Spec ready → run \`codewright:architecture\`
 3. Architecture ready → run \`codewright:story\`
-4. Story ready → run \`codewright:dev\`
-5. Implemented → run \`codewright:review\`
+4. Before implementing → run \`codewright:readiness\`
+5. During implementation → run \`codewright:quality\`, \`codewright:test\`, \`codewright:refactor\`
+6. For bug fixes → run \`codewright:quick-dev\`
+7. Story ready → run \`codewright:dev\`
+8. Implemented → run \`codewright:review\`
+9. After sprint → run \`codewright:retrospective\`
+10. Documentation needed → run \`codewright:document\`
 
 ## Rules
 
@@ -75,7 +188,13 @@ This project uses Codewright for assisted development.
   // Auto-generate project context
   const contextResult = contextGenerateCommand(cwd);
 
-  return { codewrightDir, outputDir, agentsSkillsDir, contextFile: contextResult.path };
+  return {
+    codewrightDir,
+    outputDir,
+    agentsSkillsDir,
+    contextFile: contextResult.path,
+    detected,
+  };
 }
 
 function installSkills(agentsSkillsDir: string) {

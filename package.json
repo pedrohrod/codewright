@@ -1,6 +1,6 @@
 {
   "name": "codewright",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Open-source AI-assisted specification and implementation system",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",

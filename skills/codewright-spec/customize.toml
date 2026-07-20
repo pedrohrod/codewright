@@ -1,0 +1,6 @@
+# Codewright Spec customization
+
+[workflow]
+spec_output_path = "specs"
+memlog_filename = ".memlog.md"
+default_fields = ["topic", "goal"]

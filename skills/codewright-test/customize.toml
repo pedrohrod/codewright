@@ -1,0 +1,7 @@
+# Codewright Test customization
+
+[test]
+default_level = "unit"
+generated_suffix = ".test.ts"
+fixture_pattern = "factories"
+coverage_threshold = 80

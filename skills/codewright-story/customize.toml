@@ -1,0 +1,5 @@
+# Codewright Story customization
+
+[workflow]
+stories_output_path = "stories"
+default_phase = "1"

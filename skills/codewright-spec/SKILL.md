@@ -15,7 +15,7 @@ When the user says: "codewright spec", "create spec", "specification", "spec"
     <action>Extract: system goal, expected capabilities, known constraints</action>
   </step>
   <step n="2" goal="Initialize memlog">
-    <action>Run `npx codewright spec create --slug <name>`</action>
+    <action>Run `npx codewright spec <name>`</action>
   </step>
   <step n="3" goal="Populate memlog with entries">
     <action>Add entries to memlog based on the conversation:
@@ -26,7 +26,7 @@ When the user says: "codewright spec", "create spec", "specification", "spec"
     </action>
   </step>
   <step n="4" goal="Derive SPEC.md">
-    <action>Run `npx codewright spec update --slug <name>` to re-derive SPEC.md from memlog</action>
+    <action>Run `npx codewright spec <name> --update` to re-derive SPEC.md from memlog</action>
   </step>
   <step n="5" goal="Self-validation">
     <action>Validate that SPEC.md contains:

@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { load } from "js-yaml";
 
 export interface CodewrightConfig {
@@ -9,6 +9,13 @@ export interface CodewrightConfig {
   communication_language: string;
   output_folder: string;
   context_file: string;
+
+  // Auto-detected fields
+  framework?: string;
+  test_runner?: string;
+  lint_tools?: string[];
+  project_language?: string;
+  strict_mode?: boolean;
 }
 
 const DEFAULTS: CodewrightConfig = {
@@ -20,19 +27,30 @@ const DEFAULTS: CodewrightConfig = {
   context_file: ".codewright-output/project-context.md",
 };
 
-export function loadConfig(cwd: string): CodewrightConfig {
-  const configPath = resolve(cwd, ".codewright", "config.yaml");
-  if (!existsSync(configPath)) {
-    return { ...DEFAULTS };
-  }
-
+function loadYaml(path: string): Record<string, unknown> {
+  if (!existsSync(path)) return {};
   try {
-    const raw = readFileSync(configPath, "utf-8");
-    const parsed = load(raw) as Partial<CodewrightConfig>;
-    return { ...DEFAULTS, ...parsed };
+    const raw = readFileSync(path, "utf-8");
+    return (load(raw) as Record<string, unknown>) || {};
   } catch {
-    return { ...DEFAULTS };
+    return {};
   }
+}
+
+function mergeConfigs(
+  ...sources: Record<string, unknown>[]
+): CodewrightConfig {
+  const merged: Record<string, unknown> = { ...DEFAULTS };
+  for (const src of sources) {
+    Object.assign(merged, src);
+  }
+  return merged as unknown as CodewrightConfig;
+}
+
+export function loadConfig(cwd: string): CodewrightConfig {
+  const projectConfig = loadYaml(resolve(cwd, ".codewright", "config.yaml"));
+  const userConfig = loadYaml(resolve(cwd, ".codewright", "config.user.yaml"));
+  return mergeConfigs(projectConfig, userConfig);
 }
 
 export function resolveOutputDir(cwd: string, config: CodewrightConfig): string {

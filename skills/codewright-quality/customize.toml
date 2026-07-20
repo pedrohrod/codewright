@@ -1,0 +1,7 @@
+# Codewright Quality customization
+
+[analysis]
+severity_levels = ["Critical", "Warning", "Suggestion"]
+principles = ["SOLID", "DRY", "KISS", "Naming", "Complexity"]
+max_complexity = 10
+max_method_lines = 30

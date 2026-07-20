@@ -24,7 +24,7 @@ When the user says: "codewright story", "create story", "story", "break into tas
   </step>
   <step n="3" goal="Create each story">
     <action>For each story, run:
-      `npx codewright story create --spec <name> --id <id> --title "<title>"`
+      `npx codewright story <name> <id> "<title>"`
     </action>
     <action>Manually fill in the generated file:
       - I/O Matrix with scenarios and edge cases
@@ -40,4 +40,4 @@ When the user says: "codewright story", "create story", "story", "break into tas
 </workflow>
 
 ## Finalization
-Stories created. Use `npx codewright story list --spec <name>` to view all stories.
+Stories created. Use `npx codewright story <name>` to view all stories.
