@@ -26,6 +26,7 @@ const SKILL_NAMES = [
   "codewright-retrospective",
   "codewright-epic",
   "codewright-develop",
+  "codewright-rules",
 ];
 
 interface DetectedStack {
@@ -105,9 +106,10 @@ export function initCommand(cwd: string, dir?: string) {
   const outputDir = resolve(targetDir, ".codewright-output");
   const agentsSkillsDir = resolve(targetDir, ".agents", "skills");
   const customDir = resolve(codewrightDir, "custom");
+  const rulesDir = resolve(codewrightDir, "rules");
 
   // Create directories
-  for (const d of [codewrightDir, outputDir, agentsSkillsDir, customDir]) {
+  for (const d of [codewrightDir, outputDir, agentsSkillsDir, customDir, rulesDir]) {
     if (!existsSync(d)) mkdirSync(d, { recursive: true });
   }
 
@@ -117,6 +119,35 @@ export function initCommand(cwd: string, dir?: string) {
   // Create .gitkeep in custom/
   const gitkeepPath = resolve(customDir, ".gitkeep");
   if (!existsSync(gitkeepPath)) writeFileSync(gitkeepPath, "", "utf-8");
+
+  // Create .gitkeep in rules/
+  const rulesGitkeep = resolve(rulesDir, ".gitkeep");
+  if (!existsSync(rulesGitkeep)) writeFileSync(rulesGitkeep, "", "utf-8");
+
+  // Create default rules file
+  const rulesPath = resolve(rulesDir, "DEFAULT.md");
+  if (!existsSync(rulesPath)) {
+    const rules = `# Project Rules
+
+Add your project-specific rules here. These rules are loaded by codewright skills.
+
+## Code Style
+- Use consistent naming conventions
+- Follow existing patterns in the codebase
+- Write self-documenting code
+
+## Testing
+- Write tests for new features
+- Keep tests focused and isolated
+- Test edge cases
+
+## Documentation
+- Update docs when changing public APIs
+- Use JSDoc/TSDoc for functions
+- Keep README current
+`;
+    writeFileSync(rulesPath, rules, "utf-8");
+  }
 
   // Create config.yaml with detected values
   const configPath = resolve(codewrightDir, "config.yaml");

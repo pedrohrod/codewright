@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { initCommand } from "./commands/init.js";
-import { specCreateCommand, specUpdateCommand } from "./commands/spec.js";
+import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffCommand, specVersionCommand, specSyncCommand } from "./commands/spec.js";
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
@@ -52,15 +52,36 @@ program
   .argument("[slug]", "Spec slug (create if new, update if exists)")
   .option("--update", "Re-derive SPEC.md from memlog")
   .option("--input <path>", "Seed spec from a file")
+  .option("--history", "View spec version history")
+  .option("--diff [from] [to]", "Diff between spec versions")
+  .option("--snapshot", "Create a new version snapshot")
+  .option("--sync", "Sync spec with code (compare requirements vs implementation)")
   .action((slug: string, opts) => {
     if (!slug) {
       console.log("Usage: codewright spec <slug>");
       console.log("       codewright spec <slug> --update");
+      console.log("       codewright spec <slug> --history");
+      console.log("       codewright spec <slug> --diff [from] [to]");
+      console.log("       codewright spec <slug> --snapshot");
+      console.log("       codewright spec <slug> --sync");
       return;
     }
     if (opts.update) {
       const result = specUpdateCommand(process.cwd(), slug);
       console.log(`✓ Spec updated at ${result.specDir}`);
+    } else if (opts.history) {
+      const result = specHistoryCommand(process.cwd(), slug);
+      console.log(result);
+    } else if (opts.diff) {
+      const from = typeof opts.diff === 'string' ? opts.diff : undefined;
+      const result = specDiffCommand(process.cwd(), slug, from);
+      console.log(result);
+    } else if (opts.snapshot) {
+      const result = specVersionCommand(process.cwd(), slug);
+      console.log(result);
+    } else if (opts.sync) {
+      const result = specSyncCommand(process.cwd(), slug);
+      console.log(result);
     } else {
       const result = specCreateCommand({ cwd: process.cwd(), slug, input: opts.input });
       console.log(`✓ Spec created at ${result.specDir}`);

@@ -93,6 +93,10 @@ npx codewright review my-feature S001
 | `codewright spec <slug>` | Create a new specification |
 | `codewright spec <slug> --update` | Re-derive SPEC.md from memlog |
 | `codewright spec <slug> --input <file>` | Seed spec from existing document |
+| `codewright spec <slug> --history` | View spec version history |
+| `codewright spec <slug> --snapshot` | Create a version snapshot |
+| `codewright spec <slug> --diff [from]` | Diff between spec versions |
+| `codewright spec <slug> --sync` | Sync spec with code (compare requirements vs implementation) |
 | `codewright story <spec>` | List stories for a spec |
 | `codewright story <spec> <id> "<title>"` | Create a story |
 | `codewright dev <spec> <id>` | Start implementing a story |
@@ -101,7 +105,7 @@ npx codewright review my-feature S001
 
 ## Skills
 
-15 AI-powered skills installed automatically:
+16 AI-powered skills installed automatically:
 
 ### Core Workflow
 | Skill | Description |
@@ -124,11 +128,35 @@ npx codewright review my-feature S001
 | `codewright:quick-dev` | Rapid bug fixes and hotfixes |
 | `codewright:document` | Generate JSDoc, README, API docs |
 | `codewright:retrospective` | Sprint review and lessons learned |
+| `codewright:rules` | Manage project rules (add, list, review) |
 | `codewright:init` | Project setup and initialization |
 
 ### How Skills Work
 
 Skills are `.agents/skills/<name>/SKILL.md` files that guide AI agents through workflows. When you say "codewright spec" to an agent, it loads the skill and follows the defined steps.
+
+## Living Specs & Rules
+
+### Living Specs
+Specs are not static documents — they evolve with your code:
+
+```bash
+codewright spec my-feature --history    # View version history
+codewright spec my-feature --snapshot   # Create version snapshot
+codewright spec my-feature --diff       # Compare versions
+codewright spec my-feature --sync       # Check requirements vs implementation
+```
+
+### Project Rules
+Keep project-specific rules in `.codewright/rules/`. These rules are automatically loaded by codewright skills during development.
+
+```
+.codewright/
+├── rules/
+│   ├── DEFAULT.md        # Main rules file
+│   ├── testing.md        # Testing rules
+│   └── style.md          # Code style rules
+```
 
 ## Configuration
 
