@@ -1,0 +1,7 @@
+# Codewright Develop (Orchestrator) customization
+
+[workflow]
+skip_refactor_if_clean = true
+auto_proceed_after_review = false
+stop_on_critical = true
+show_progress_after_each_story = true

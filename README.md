@@ -101,15 +101,17 @@ npx codewright review my-feature S001
 
 ## Skills
 
-13 AI-powered skills installed automatically:
+15 AI-powered skills installed automatically:
 
 ### Core Workflow
 | Skill | Description |
 |-------|-------------|
 | `codewright:spec` | Create specifications from ideas |
 | `codewright:architecture` | Design architecture decisions |
+| `codewright:epic` | Break spec into epics and stories (faster spec-to-implementation) |
 | `codewright:story` | Break capabilities into stories |
-| `codewright:dev` | Implement stories (TDD) |
+| `codewright:develop` | **Orchestrate full workflow** — readiness → dev → quality → test → review |
+| `codewright:dev` | Implement a single story (TDD) |
 | `codewright:review` | Parallel code review (3 reviewers) |
 | `codewright:readiness` | Check if story is ready to implement |
 

@@ -1,0 +1,8 @@
+# Codewright Epic customization
+
+[workflow]
+min_stories_per_epic = 2
+max_stories_per_epic = 8
+story_format = "given-when-then"
+output_path = "epics.md"
+create_story_files = true
