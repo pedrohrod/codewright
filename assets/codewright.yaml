@@ -1,0 +1,6 @@
+codewright_version: "0.1.0"
+project_name: ""
+stack: "node"
+communication_language: "en"
+output_folder: ".codewright-output"
+context_file: ".codewright-output/project-context.md"
