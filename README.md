@@ -1,18 +1,41 @@
 # codewright
 
-Open-source AI-assisted specification and implementation system.
+> AI-assisted specification and implementation system for software development.
 
 **IDEA → spec → architecture → stories → implementation → review**
+
+[![npm version](https://img.shields.io/npm/v/codewright.svg)](https://www.npmjs.com/package/codewright)
+[![license](https://img.shields.io/npm/l/codewright.svg)](https://github.com/codewright/codewright/blob/main/LICENSE)
+
+---
+
+## What is codewright?
+
+codewright orchestrates the full software development lifecycle through AI agents:
+
+1. **Spec** — Capture your idea, goals, and constraints
+2. **Architecture** — Design decisions and system structure
+3. **Stories** — Break down capabilities into implementable tasks
+4. **Dev** — Implement with TDD (RED → GREEN → REFACTOR)
+5. **Review** — Parallel code review with specialized agents
+
+It works with **Verboo Code**, **Claude Code**, or any AI agent that loads skills from `.agents/skills/`.
 
 ## Installation
 
 ```bash
 npm install -g codewright
-# or
+```
+
+Or use directly with npx:
+
+```bash
 npx codewright init
 ```
 
 ## Quick Start
+
+### 1. Initialize your project
 
 ```bash
 npx codewright init
@@ -20,68 +43,138 @@ npx codewright init
 
 This creates:
 
-| Directory / File | Purpose |
-|---|---|
-| `.codewright/config.yaml` | Project configuration |
-| `.codewright/AGENTS.md` | Agent instructions |
-| `.codewright-output/` | Generated artifacts (specs, stories, reviews) |
-| `.codewright-output/project-context.md` | Auto-generated project context |
-| `.agents/skills/` | Installed agent skills |
+```
+your-project/
+├── .codewright/
+│   ├── config.yaml          # Auto-detected stack & settings
+│   ├── config.user.yaml     # Your personal overrides (gitignored)
+│   ├── AGENTS.md            # Rules for AI agents
+│   └── custom/              # Per-skill customization
+├── .agents/skills/          # 13 AI agent skills
+│   ├── codewright-spec/
+│   ├── codewright-story/
+│   ├── codewright-dev/
+│   └── ... (10 more)
+└── .codewright-output/      # Generated artifacts
+    └── project-context.md   # Auto-generated project context
+```
+
+**Auto-detection:** The init command detects your framework, test runner, lint tools, and TypeScript strict mode from `package.json` and `tsconfig.json`.
+
+### 2. Create a spec
+
+```bash
+npx codewright spec my-feature
+```
+
+### 3. Break into stories
+
+```bash
+npx codewright story my-feature S001 "Create user form"
+```
+
+### 4. Implement
+
+```bash
+npx codewright dev my-feature S001
+```
+
+### 5. Review
+
+```bash
+npx codewright review my-feature S001
+```
 
 ## Commands
 
-### `codewright init [--dir .]`
-Initialize codewright structure in your project.
-Installs all skills into `.agents/skills/` and auto-generates project context.
-
-### `codewright spec create --slug <name> [--input <file>]`
-Create a new specification with memlog.
-The `--input` flag reads an existing document as seed.
-
-### `codewright spec update --slug <name>`
-Re-derive SPEC.md from memlog entries.
-
-### `codewright story create --spec <name> --id <id> --title "<title>" [--phase <n>]`
-Create an implementation story with I/O Matrix template.
-
-### `codewright story list --spec <name>`
-List all stories of a spec.
-
-### `codewright context generate`
-Scan the project and generate `project-context.md`.
-
-### `codewright dev start --spec <name> --story <id>`
-Mark a story as in-progress and register baseline commit.
-
-### `codewright review prepare --spec <name> --story <id>`
-Generate diff and review checklist for a story.
+| Command | Description |
+|---------|-------------|
+| `codewright init` | Initialize project with skills and config |
+| `codewright spec <slug>` | Create a new specification |
+| `codewright spec <slug> --update` | Re-derive SPEC.md from memlog |
+| `codewright spec <slug> --input <file>` | Seed spec from existing document |
+| `codewright story <spec>` | List stories for a spec |
+| `codewright story <spec> <id> "<title>"` | Create a story |
+| `codewright dev <spec> <id>` | Start implementing a story |
+| `codewright review <spec> <id>` | Prepare code review |
+| `codewright context` | Regenerate project context |
 
 ## Skills
 
-Skills are automatically installed into `.agents/skills/` when you run `codewright init`. Each skill is in its own subdirectory:
+13 AI-powered skills installed automatically:
+
+### Core Workflow
+| Skill | Description |
+|-------|-------------|
+| `codewright:spec` | Create specifications from ideas |
+| `codewright:architecture` | Design architecture decisions |
+| `codewright:story` | Break capabilities into stories |
+| `codewright:dev` | Implement stories (TDD) |
+| `codewright:review` | Parallel code review (3 reviewers) |
+| `codewright:readiness` | Check if story is ready to implement |
+
+### Development Support
+| Skill | Description |
+|-------|-------------|
+| `codewright:quality` | Analyze code quality (SOLID, DRY, naming) |
+| `codewright:test` | Generate tests (unit, integration, fixtures) |
+| `codewright:refactor` | Apply design patterns (Strategy, Factory, etc.) |
+| `codewright:quick-dev` | Rapid bug fixes and hotfixes |
+| `codewright:document` | Generate JSDoc, README, API docs |
+| `codewright:retrospective` | Sprint review and lessons learned |
+| `codewright:init` | Project setup and initialization |
+
+### How Skills Work
+
+Skills are `.agents/skills/<name>/SKILL.md` files that guide AI agents through workflows. When you say "codewright spec" to an agent, it loads the skill and follows the defined steps.
+
+## Configuration
+
+### Three-layer config (base → project → user)
+
+```yaml
+# .codewright/config.yaml (project settings)
+project_name: my-app
+stack: node
+framework: next
+test_runner: vitest
+communication_language: en
+
+# .codewright/config.user.yaml (your overrides, gitignored)
+# Override any field here
+```
+
+### Customize per skill
+
+```toml
+# .codewright/custom/codewright-dev.toml
+[workflow]
+tdd_mode = true
+auto_commit = false
+```
+
+## Output Structure
 
 ```
-.agents/skills/
-├── codewright-init/SKILL.md
-├── codewright-spec/SKILL.md
-├── codewright-architecture/SKILL.md
-├── codewright-story/SKILL.md
-├── codewright-dev/SKILL.md
-└── codewright-review/SKILL.md
+.codewright-output/
+├── project-context.md
+└── specs/
+    └── spec-my-feature/
+        ├── .memlog.md          # Decision log
+        ├── SPEC.md             # Specification
+        ├── architecture.md     # Architecture decisions
+        ├── stories/
+        │   ├── S001-create-form.md
+        │   └── S002-add-validation.md
+        └── reviews/
+            └── review-S001.md
 ```
-
-### Flow
-
-1. **codewright:init** — Setup tooling and context
-2. **codewright:spec** — Create a specification from an idea
-3. **codewright:architecture** — Design architecture from a spec
-4. **codewright:story** — Break spec into implementation stories
-5. **codewright:dev** — Implement a story (TDD: RED → GREEN → REFACTOR)
-6. **codewright:review** — Review implementation with parallel subagents
 
 ## Development
 
 ```bash
+git clone https://github.com/codewright/codewright.git
+cd codewright
 npm install
 npm run build
 npm test
@@ -90,3 +183,7 @@ npm test
 ## License
 
 MIT
+
+## Contributing
+
+Contributions welcome! Please open an issue or PR.

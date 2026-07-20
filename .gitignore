@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .codewright-output/
+.codewright/config.user.yaml
 *.tmp

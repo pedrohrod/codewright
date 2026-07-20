@@ -1,7 +1,7 @@
 {
   "name": "codewright",
-  "version": "0.3.0",
-  "description": "Open-source AI-assisted specification and implementation system",
+  "version": "0.4.0",
+  "description": "AI-assisted specification, architecture, and implementation system — spec → architecture → stories → dev → review",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "bin": {
@@ -20,7 +20,19 @@
     "specification",
     "implementation",
     "cli",
-    "codewright"
+    "codewright",
+    "agent",
+    "architecture",
+    "tdd",
+    "code-review",
+    "design-patterns",
+    "clean-code",
+    "story",
+    "sprint",
+    "agile",
+    "verboo-code",
+    "claude-code",
+    "development-workflow"
   ],
   "author": "",
   "license": "MIT",
