@@ -9,6 +9,7 @@ import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffComma
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
+import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -150,6 +151,21 @@ program
   .action(() => {
     const result = contextGenerateCommand(process.cwd());
     console.log(`✓ Project context generated at ${result.path}`);
+  });
+
+// ─── hook ───────────────────────────────────────────────
+program
+  .command("hook")
+  .description("Manage git hooks for the project")
+  .argument("[action]", "Action: install or list", "list")
+  .action((action: string) => {
+    if (action === "install") {
+      const result = hookInstallCommand(process.cwd());
+      console.log(result);
+    } else {
+      const result = hookListCommand(process.cwd());
+      console.log(result);
+    }
   });
 
 program.parse(process.argv);
