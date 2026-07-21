@@ -60,3 +60,15 @@ export function resolveOutputDir(cwd: string, config: CodewrightConfig): string 
 export function resolveSpecDir(cwd: string, config: CodewrightConfig, slug: string): string {
   return resolve(resolveOutputDir(cwd, config), "specs", `spec-${slug}`);
 }
+
+/** Resolve {template} variables in a string using the config */
+export function resolveTemplates(input: string, config: CodewrightConfig): string {
+  const vars: Record<string, string> = {
+    "project-root": process.cwd(),
+    "output-folder": config.output_folder,
+    "skills-dir": ".agents/skills",
+    "config-dir": ".codewright",
+    "project-name": config.project_name || "",
+  };
+  return input.replace(/\{(\w[\w-]*\w|\w)\}/g, (_, key) => vars[key] || `{${key}}`);
+}

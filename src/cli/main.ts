@@ -17,6 +17,7 @@ import { envSetupCommand, envListCommand } from "./commands/env.js";
 import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/deploy.js";
 import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
 import { helpCommand } from "./commands/help.js";
+import { statusCommand } from "./commands/status.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -267,6 +268,15 @@ program
   .option("--phase <phase>", "Filter by phase (ideation, planning, etc.)")
   .action((skill: string, opts) => {
     const result = helpCommand(process.cwd(), skill, opts.phase, opts.next);
+    console.log(result);
+  });
+
+// ─── status ─────────────────────────────────────────────
+program
+  .command("status")
+  .description("Show project health overview")
+  .action(() => {
+    const result = statusCommand(process.cwd());
     console.log(result);
   });
 
