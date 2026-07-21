@@ -1,6 +1,6 @@
 {
   "name": "codewright",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "AI-assisted specification, architecture, and implementation system — spec → architecture → stories → dev → review",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",

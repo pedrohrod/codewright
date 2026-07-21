@@ -32,6 +32,7 @@ const SKILL_NAMES = [
   "codewright-context",
   "codewright-deps",
   "codewright-testgen",
+  "codewright-env",
 ];
 
 interface DetectedStack {

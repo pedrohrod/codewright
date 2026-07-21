@@ -13,6 +13,7 @@ import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
+import { envSetupCommand, envListCommand } from "./commands/env.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -204,6 +205,21 @@ program
   .action((spec: string, story: string) => {
     const result = testGenFromSpecCommand(process.cwd(), spec, story);
     console.log(result);
+  });
+
+// ─── env ─────────────────────────────────────────────────
+program
+  .command("env")
+  .description("Manage environment variables")
+  .argument("[action]", "Action: setup or list", "list")
+  .action((action: string) => {
+    if (action === "setup") {
+      const result = envSetupCommand(process.cwd());
+      console.log(result);
+    } else {
+      const result = envListCommand(process.cwd());
+      console.log(result);
+    }
   });
 
 program.parse(process.argv);
