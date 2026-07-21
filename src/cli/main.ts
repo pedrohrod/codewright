@@ -12,6 +12,7 @@ import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
+import { testGenFromSpecCommand } from "./commands/testgen.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -191,6 +192,17 @@ program
   .description("Check project dependencies for outdated packages")
   .action(() => {
     const result = depsCheckCommand(process.cwd());
+    console.log(result);
+  });
+
+// ─── test ────────────────────────────────────────────────
+program
+  .command("test")
+  .description("Generate tests from spec stories")
+  .argument("<spec>", "Spec slug")
+  .argument("[story]", "Story ID (optional, generates for all if omitted)")
+  .action((spec: string, story: string) => {
+    const result = testGenFromSpecCommand(process.cwd(), spec, story);
     console.log(result);
   });
 
