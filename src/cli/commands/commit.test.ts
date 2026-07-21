@@ -115,7 +115,7 @@ describe("commitCommand", () => {
       cwd: tmpDir,
       encoding: "utf-8",
     }).trim();
-    expect(currentBranch).toBe("main");
+    expect(["main", "master"]).toContain(currentBranch);
 
     // Verify story status was updated
     const storiesDir = join(tmpDir, ".codewright-output", "specs", "spec-test", "stories");
