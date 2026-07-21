@@ -28,6 +28,7 @@ const SKILL_NAMES = [
   "codewright-develop",
   "codewright-rules",
   "codewright-hook",
+  "codewright-ci",
 ];
 
 interface DetectedStack {

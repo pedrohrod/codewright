@@ -10,6 +10,7 @@ import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
+import { ciGenerateCommand } from "./commands/ci.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,6 +167,15 @@ program
       const result = hookListCommand(process.cwd());
       console.log(result);
     }
+  });
+
+// ─── ci ─────────────────────────────────────────────────
+program
+  .command("ci")
+  .description("Generate CI workflow for the project")
+  .action(() => {
+    const result = ciGenerateCommand(process.cwd());
+    console.log(result);
   });
 
 program.parse(process.argv);
