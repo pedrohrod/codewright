@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, readFileSync
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../../config/loader.js";
-import { contextGenerateCommand } from "./context.js";
+import { contextGenerateCommand, contextLlmsCommand } from "./context.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,6 +29,7 @@ const SKILL_NAMES = [
   "codewright-rules",
   "codewright-hook",
   "codewright-ci",
+  "codewright-context",
 ];
 
 interface DetectedStack {
@@ -222,12 +223,14 @@ This project uses Codewright for assisted development.
 
   // Auto-generate project context
   const contextResult = contextGenerateCommand(cwd);
+  const llmsResult = contextLlmsCommand(cwd);
 
   return {
     codewrightDir,
     outputDir,
     agentsSkillsDir,
     contextFile: contextResult.path,
+    llmsFile: llmsResult.path,
     detected,
   };
 }

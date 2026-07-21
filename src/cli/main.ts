@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { initCommand } from "./commands/init.js";
 import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffCommand, specVersionCommand, specSyncCommand } from "./commands/spec.js";
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
-import { contextGenerateCommand } from "./commands/context.js";
+import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
@@ -148,10 +148,16 @@ program
 // ─── context ────────────────────────────────────────────
 program
   .command("context")
-  .description("Generate project context")
-  .action(() => {
-    const result = contextGenerateCommand(process.cwd());
-    console.log(`✓ Project context generated at ${result.path}`);
+  .description("Generate project context files")
+  .option("--llms", "Generate llms.txt for AI agents")
+  .action((opts) => {
+    if (opts.llms) {
+      const result = contextLlmsCommand(process.cwd());
+      console.log(`✓ llms.txt generated at ${result.path}`);
+    } else {
+      const result = contextGenerateCommand(process.cwd());
+      console.log(`✓ Project context generated at ${result.path}`);
+    }
   });
 
 // ─── hook ───────────────────────────────────────────────
