@@ -51,9 +51,10 @@ After init, talk to the agent:
 | `codewright:architecture` | Generates architecture decisions |
 | `codewright:epic` | Breaks spec into epics and stories |
 | `codewright:story` | Creates stories with I/O Matrix |
-| `codewright:develop` | **Orchestrates full workflow**: readiness → dev → quality → test → review |
+| `codewright:develop` | **Orchestrates full workflow**: readiness → dev → quality → test → review → commit |
 | `codewright:quality` | Analyzes code (SOLID, DRY, naming) |
 | `codewright:review` | Parallel code review (3 reviewers) |
+| `codewright:commit` | Commit story to feature branch and merge to main |
 | `codewright:test` | Generates tests from I/O Matrix |
 | `codewright:document` | Generates JSDoc, README, API docs |
 
@@ -66,6 +67,7 @@ codewright spec my-feature         # create spec
 codewright story my-feature S001 "Login"  # create story
 codewright dev my-feature S001      # start implementation
 codewright review my-feature S001   # prepare review
+codewright commit my-feature S001   # commit to feature branch
 codewright status                   # project health
 codewright help                     # list all skills by phase
 ```
@@ -132,6 +134,7 @@ npx codewright review my-feature S001
 | `codewright story <spec> <id> "<title>"` | Create a story |
 | `codewright dev <spec> <id>` | Start implementing a story |
 | `codewright review <spec> <id>` | Prepare code review |
+| `codewright commit <spec> <id>` | Commit story to feature branch and merge to main |
 | `codewright context` | Regenerate project context |
 
 ## Skills
@@ -145,9 +148,10 @@ npx codewright review my-feature S001
 | `codewright:architecture` | Design architecture decisions |
 | `codewright:epic` | Break spec into epics and stories (faster spec-to-implementation) |
 | `codewright:story` | Break capabilities into stories |
-| `codewright:develop` | **Orchestrate full workflow** — readiness → dev → quality → test → review |
+| `codewright:develop` | **Orchestrate full workflow** — readiness → dev → quality → test → review → commit |
 | `codewright:dev` | Implement a single story (TDD) |
 | `codewright:review` | Parallel code review (3 reviewers) |
+| `codewright:commit` | Commit story to feature branch and merge to main |
 | `codewright:readiness` | Check if story is ready to implement |
 
 ### Development Support

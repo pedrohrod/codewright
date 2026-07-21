@@ -1,0 +1,6 @@
+# Codewright Commit customization
+
+[commit]
+conventional_commit = true
+auto_merge = true
+branch_prefix = "story/"
