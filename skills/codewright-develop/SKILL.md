@@ -60,9 +60,10 @@ When the user says: "codewright develop", "develop all stories", "run full workf
     </action>
 
     <action>**2g. Commit**
-      - Run `codewright:commit` to create a feature branch and commit the changes
-      - Creates branch `story/<id>-<slug>` and merges to main
+      - Run `codewright:commit` to create a feature branch and push the changes
+      - Creates branch `story/<id>-<slug>` and pushes to origin
       - Updates story status to "done"
+      - User opens a PR or merges locally after completion
     </action>
 
     <action>After each story, show progress:

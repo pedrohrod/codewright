@@ -6,34 +6,15 @@ import { writeArtifact } from "../../artifacts/writer.js";
 
 export interface CommitOptions {
   branch?: string;
-  noMerge?: boolean;
   amend?: boolean;
 }
 
 export interface CommitResult {
   branch: string;
   commitHash: string | null;
-  mergeResult: string | null;
   filesChanged: number;
   storyUpdated: boolean;
-}
-
-function detectDefaultBranch(cwd: string): string {
-  try {
-    const remote = execSync("git symbolic-ref refs/remotes/origin/HEAD", {
-      cwd,
-      encoding: "utf-8",
-    }).trim();
-    return remote.replace("refs/remotes/origin/", "");
-  } catch {
-    // Fallback: check if main or master exists locally
-    try {
-      execSync("git rev-parse --verify main", { cwd, encoding: "utf-8" });
-      return "main";
-    } catch {
-      return "master";
-    }
-  }
+  pushed: boolean;
 }
 
 function storySlug(title: string): string {
@@ -146,9 +127,9 @@ export function commitCommand(
     return {
       branch: branchName,
       commitHash: null,
-      mergeResult: null,
       filesChanged: 0,
       storyUpdated: false,
+      pushed: false,
     };
   }
 
@@ -175,23 +156,13 @@ export function commitCommand(
     encoding: "utf-8",
   }).trim();
 
-  // Merge back to default branch
-  let mergeResult: string | null = null;
-  if (!options.noMerge) {
-    const defaultBranch = detectDefaultBranch(cwd);
-    execSync(`git checkout "${defaultBranch}"`, { cwd, encoding: "utf-8" });
-    const mergeOutput = execSync(`git merge --no-ff "${branchName}" -m "Merge story ${storyId}: ${title}"`, {
-      cwd,
-      encoding: "utf-8",
-    }).trim();
-
-    // Push
-    try {
-      execSync(`git push origin "${defaultBranch}"`, { cwd, encoding: "utf-8" });
-      mergeResult = `${mergeOutput}\nPushed to origin/${defaultBranch}`;
-    } catch {
-      mergeResult = `${mergeOutput}\nPush skipped (no remote or push failed)`;
-    }
+  // Push branch to remote
+  let pushed = false;
+  try {
+    execSync(`git push -u origin "${branchName}"`, { cwd, encoding: "utf-8" });
+    pushed = true;
+  } catch {
+    // No remote or push failed — not a fatal error
   }
 
   // Update story status
@@ -207,8 +178,8 @@ export function commitCommand(
   return {
     branch: branchName,
     commitHash,
-    mergeResult,
     filesChanged,
     storyUpdated: true,
+    pushed,
   };
 }

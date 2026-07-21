@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { execSync } from "node:child_process";
-import { mkdtempSync, existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { commitCommand } from "./commit.js";
@@ -87,7 +87,7 @@ describe("commitCommand", () => {
     expect(() => commitCommand(tmpDir, "test", "S999")).toThrow("Story 'S999' not found");
   });
 
-  it("should create branch and commit changes", () => {
+  it("should create branch, commit changes, and stay on branch", () => {
     const tmpDir = createTestRepo();
     tmpDirs.push(tmpDir);
 
@@ -105,17 +105,14 @@ describe("commitCommand", () => {
     expect(result.commitHash).toBeTruthy();
     expect(result.filesChanged).toBeGreaterThan(0);
     expect(result.storyUpdated).toBe(true);
+    expect(result.pushed).toBe(false); // no remote configured
 
-    // Verify branch was created and merged
-    const branches = execSync("git branch", { cwd: tmpDir, encoding: "utf-8" });
-    expect(branches).toContain("story/S001-create-login-form");
-
-    // Verify we're back on default branch
+    // Verify we're on the feature branch, not main/master
     const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
       cwd: tmpDir,
       encoding: "utf-8",
     }).trim();
-    expect(["main", "master"]).toContain(currentBranch);
+    expect(currentBranch).toBe("story/S001-create-login-form");
 
     // Verify story status was updated
     const storiesDir = join(tmpDir, ".codewright-output", "specs", "spec-test", "stories");
@@ -138,26 +135,6 @@ describe("commitCommand", () => {
 
     const branches = execSync("git branch", { cwd: tmpDir, encoding: "utf-8" });
     expect(branches).toContain("custom-branch");
-  });
-
-  it("should skip merge with --no-merge", () => {
-    const tmpDir = createTestRepo();
-    tmpDirs.push(tmpDir);
-
-    execSync(`node ${CLI} init`, { cwd: tmpDir });
-    execSync(`node ${CLI} spec test`, { cwd: tmpDir });
-    createStoryFile(tmpDir, "test", "S001", "Test");
-    writeFileSync(join(tmpDir, "test.ts"), "const x = 1;", "utf-8");
-
-    const result = commitCommand(tmpDir, "test", "S001", { noMerge: true });
-    expect(result.mergeResult).toBeNull();
-
-    // Should still be on the feature branch
-    const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
-      cwd: tmpDir,
-      encoding: "utf-8",
-    }).trim();
-    expect(currentBranch).toBe("story/S001-test");
   });
 
   it("should warn when nothing to commit", () => {

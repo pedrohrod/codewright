@@ -156,23 +156,25 @@ program
 // ─── commit ─────────────────────────────────────────────
 program
   .command("commit")
-  .description("Commit story changes to a feature branch and merge to main")
+  .description("Commit story changes to a feature branch and push")
   .argument("<spec>", "Spec slug")
   .argument("<id>", "Story ID")
   .option("--branch <name>", "Custom branch name")
-  .option("--no-merge", "Skip merge back to main")
   .option("--amend", "Amend to last commit instead of new commit")
   .action((spec: string, id: string, opts) => {
     const result = commitCommand(process.cwd(), spec, id, {
       branch: opts.branch,
-      noMerge: opts.noMerge,
       amend: opts.amend,
     });
     if (result.commitHash) {
       console.log(`✓ Story committed to branch ${result.branch}`);
       console.log(`  Commit: ${result.commitHash}`);
       console.log(`  Files changed: ${result.filesChanged}`);
-      if (result.mergeResult) console.log(`  ${result.mergeResult}`);
+      if (result.pushed) {
+        console.log(`  Pushed to origin/${result.branch}`);
+      } else {
+        console.log(`  ⚠ Branch not pushed (no remote configured or push failed)`);
+      }
       if (result.storyUpdated) console.log(`  Story status updated to "done"`);
     } else {
       console.log(`⚠ No changes to commit for story ${id}`);
