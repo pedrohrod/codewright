@@ -14,6 +14,7 @@ import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
 import { envSetupCommand, envListCommand } from "./commands/env.js";
+import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/deploy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -220,6 +221,23 @@ program
       const result = envListCommand(process.cwd());
       console.log(result);
     }
+  });
+
+// ─── deploy ──────────────────────────────────────────────
+const deployCmd = program.command("deploy").description("Generate deployment configuration");
+deployCmd
+  .command("dockerfile")
+  .description("Generate Dockerfile for the project")
+  .action(() => {
+    const result = deployDockerfileCommand(process.cwd());
+    console.log(result);
+  });
+deployCmd
+  .command("dockerignore")
+  .description("Generate .dockerignore")
+  .action(() => {
+    const result = deployDockerignoreCommand(process.cwd());
+    console.log(result);
   });
 
 program.parse(process.argv);
