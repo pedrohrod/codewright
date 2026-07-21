@@ -29,6 +29,7 @@ const SKILL_NAMES = [
   "codewright-rules",
   "codewright-hook",
   "codewright-ci",
+  "codewright-commit",
   "codewright-context",
   "codewright-deps",
   "codewright-testgen",

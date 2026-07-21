@@ -12,8 +12,9 @@ This project uses Codewright for assisted development.
 6. For bug fixes → run `codewright:quick-dev`
 7. Story ready → run `codewright:dev`
 8. Implemented → run `codewright:review`
-9. After sprint → run `codewright:retrospective`
-10. Documentation needed → run `codewright:document`
+9. Story complete → run `codewright:commit`
+10. After sprint → run `codewright:retrospective`
+11. Documentation needed → run `codewright:document`
 
 ## Rules
 

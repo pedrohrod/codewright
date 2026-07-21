@@ -1,6 +1,6 @@
 ---
 name: codewright:develop
-description: "Orchestrate full development workflow — readiness → dev → quality → test → review for each story"
+description: "Orchestrate full development workflow — readiness → dev → quality → test → review → commit for each story"
 phase: implementation
 ---
 
@@ -57,6 +57,12 @@ When the user says: "codewright develop", "develop all stories", "run full workf
       - Run `codewright:review` to prepare code review
       - Show High/Medium findings
       - If any High findings: fix before moving to next story
+    </action>
+
+    <action>**2g. Commit**
+      - Run `codewright:commit` to create a feature branch and commit the changes
+      - Creates branch `story/<id>-<slug>` and merges to main
+      - Updates story status to "done"
     </action>
 
     <action>After each story, show progress:

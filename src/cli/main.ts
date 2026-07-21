@@ -9,6 +9,7 @@ import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffComma
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
+import { commitCommand } from "./commands/commit.js";
 import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
@@ -150,6 +151,32 @@ program
     const result = reviewPrepareCommand(process.cwd(), spec, id);
     console.log(`✓ Review prepared at ${result.reviewFile}`);
     console.log(`  Baseline commit: ${result.baseline}`);
+  });
+
+// ─── commit ─────────────────────────────────────────────
+program
+  .command("commit")
+  .description("Commit story changes to a feature branch and merge to main")
+  .argument("<spec>", "Spec slug")
+  .argument("<id>", "Story ID")
+  .option("--branch <name>", "Custom branch name")
+  .option("--no-merge", "Skip merge back to main")
+  .option("--amend", "Amend to last commit instead of new commit")
+  .action((spec: string, id: string, opts) => {
+    const result = commitCommand(process.cwd(), spec, id, {
+      branch: opts.branch,
+      noMerge: opts.noMerge,
+      amend: opts.amend,
+    });
+    if (result.commitHash) {
+      console.log(`✓ Story committed to branch ${result.branch}`);
+      console.log(`  Commit: ${result.commitHash}`);
+      console.log(`  Files changed: ${result.filesChanged}`);
+      if (result.mergeResult) console.log(`  ${result.mergeResult}`);
+      if (result.storyUpdated) console.log(`  Story status updated to "done"`);
+    } else {
+      console.log(`⚠ No changes to commit for story ${id}`);
+    }
   });
 
 // ─── context ────────────────────────────────────────────

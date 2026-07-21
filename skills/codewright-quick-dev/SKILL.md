@@ -32,7 +32,12 @@ When the user says: "codewright quick-dev", "quick fix", "hotfix", "bug fix", "r
     <action>Generate summary of what changed and why</action>
     <action>Suggest running `codewright:review`</action>
   </step>
+  <step n="6" goal="Commit changes (if auto_commit is enabled)">
+    <action>Check if `auto_commit = true` in customization for codewright-quick-dev</action>
+    <action>If true: run `codewright:commit` to create a feature branch and commit</action>
+    <action>If false: skip — commit is manual</action>
+  </step>
 </workflow>
 
 ## Finalization
-Fix implemented. User should run `codewright review <name> <id>` for formal review.
+Fix implemented. User should run `codewright review <name> <id>` for formal review, then `codewright commit <name> <id>` to commit.

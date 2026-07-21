@@ -36,7 +36,13 @@ When the user says: "codewright dev", "implement story", "start story", "dev sta
     <action>Update the story file: mark tasks as completed</action>
     <action>Add entry to Change Log</action>
   </step>
+  <step n="7" goal="Commit changes (if auto_commit is enabled)">
+    <action>Check if `auto_commit = true` in `.codewright/custom/codewright-dev.toml` [workflow] section</action>
+    <action>If true: run `codewright:commit` to create a feature branch and commit all changes</action>
+    <action>If false or unset: skip — commit is manual</action>
+    <action>Default config at `skills/codewright-dev/customize.toml` has `auto_commit = false`</action>
+  </step>
 </workflow>
 
 ## Finalization
-Story implemented. Status remains "in-progress". User should run `codewright review <name> <id>` for review.
+Story implemented. Status remains "in-progress". User should run `codewright review <name> <id>` for review, then `codewright commit <name> <id>` to commit.
