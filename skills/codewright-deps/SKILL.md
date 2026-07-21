@@ -1,6 +1,7 @@
 ---
 name: codewright:deps
 description: "Check project dependencies — find outdated or vulnerable packages"
+phase: operations
 ---
 
 # Codewright Deps

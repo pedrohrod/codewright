@@ -1,6 +1,7 @@
 ---
 name: codewright:readiness
 description: "Check if a story is ready for implementation"
+phase: preparation
 ---
 
 # Codewright Readiness

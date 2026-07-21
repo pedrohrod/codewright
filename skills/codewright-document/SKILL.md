@@ -1,6 +1,7 @@
 ---
 name: codewright:document
 description: "Generate documentation for code, APIs, and modules"
+phase: operations
 ---
 
 # Codewright Document

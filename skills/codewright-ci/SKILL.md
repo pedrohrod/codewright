@@ -1,6 +1,7 @@
 ---
 name: codewright:ci
 description: "Generate CI workflow — GitHub Actions based on project stack"
+phase: operations
 ---
 
 # Codewright CI

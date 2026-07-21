@@ -1,6 +1,7 @@
 ---
 name: codewright:hook
 description: "Manage git hooks — install pre-commit checks, commit message validation"
+phase: operations
 ---
 
 # Codewright Hook

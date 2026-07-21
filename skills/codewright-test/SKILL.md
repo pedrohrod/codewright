@@ -1,6 +1,7 @@
 ---
 name: codewright:test
 description: "Generate test strategy and implementation — unit, integration, fixtures"
+phase: implementation
 ---
 
 # Codewright Test

@@ -1,6 +1,7 @@
 ---
 name: codewright:architecture
 description: "Generate architecture spine from a SPEC"
+phase: planning
 ---
 
 # Codewright Architecture

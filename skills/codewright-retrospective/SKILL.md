@@ -1,6 +1,7 @@
 ---
 name: codewright:retrospective
 description: "Post-implementation review — lessons learned, improvements for next cycle"
+phase: retrospective
 ---
 
 # Codewright Retrospective

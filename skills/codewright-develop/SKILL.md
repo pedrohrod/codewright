@@ -1,6 +1,7 @@
 ---
 name: codewright:develop
 description: "Orchestrate full development workflow — readiness → dev → quality → test → review for each story"
+phase: implementation
 ---
 
 # Codewright Develop (Orchestrator)

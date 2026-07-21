@@ -1,6 +1,7 @@
 ---
 name: codewright:context
 description: "Generate project context and llms.txt for AI agents"
+phase: operations
 ---
 
 # Codewright Context

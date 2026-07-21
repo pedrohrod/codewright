@@ -1,6 +1,7 @@
 ---
 name: codewright:refactor
 description: "Apply design patterns and refactoring — Strategy, Factory, Observer, etc."
+phase: implementation
 ---
 
 # Codewright Refactor

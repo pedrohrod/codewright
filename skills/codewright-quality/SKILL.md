@@ -1,6 +1,7 @@
 ---
 name: codewright:quality
 description: "Analyze code quality — SOLID, DRY, naming, complexity, code smells"
+phase: implementation
 ---
 
 # Codewright Quality

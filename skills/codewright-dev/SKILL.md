@@ -1,6 +1,7 @@
 ---
 name: codewright:dev
 description: "Implement a story following TDD"
+phase: implementation
 ---
 
 # Codewright Dev

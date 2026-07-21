@@ -1,6 +1,7 @@
 ---
 name: codewright:deploy
 description: "Generate deployment configuration — Dockerfile, .dockerignore"
+phase: operations
 ---
 
 # Codewright Deploy

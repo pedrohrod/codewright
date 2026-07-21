@@ -1,6 +1,7 @@
 ---
 name: codewright:testgen
 description: "Generate tests from spec stories — uses I/O Matrix to create test files"
+phase: implementation
 ---
 
 # Codewright Test Generator

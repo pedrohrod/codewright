@@ -1,6 +1,7 @@
 ---
 name: codewright:epic
 description: "Break spec into epics and stories — faster spec-to-implementation"
+phase: planning
 ---
 
 # Codewright Epic

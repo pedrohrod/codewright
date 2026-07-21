@@ -1,6 +1,7 @@
 ---
 name: codewright:story
 description: "Create implementation stories from a SPEC"
+phase: preparation
 ---
 
 # Codewright Story

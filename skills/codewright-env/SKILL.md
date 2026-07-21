@@ -1,6 +1,7 @@
 ---
 name: codewright:env
 description: "Manage environment variables — setup .env from .env.example, list current vars"
+phase: operations
 ---
 
 # Codewright Env

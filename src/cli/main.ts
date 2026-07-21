@@ -15,6 +15,8 @@ import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
 import { envSetupCommand, envListCommand } from "./commands/env.js";
 import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/deploy.js";
+import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
+import { helpCommand } from "./commands/help.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -237,6 +239,34 @@ deployCmd
   .description("Generate .dockerignore")
   .action(() => {
     const result = deployDockerignoreCommand(process.cwd());
+    console.log(result);
+  });
+
+// ─── perf ───────────────────────────────────────────────
+program
+  .command("perf")
+  .description("Performance testing with k6")
+  .argument("[action]", "Action: setup or run", "setup")
+  .argument("[tool]", "Tool: k6", "k6")
+  .action((action: string, tool: string) => {
+    if (action === "run") {
+      const result = perfRunCommand(process.cwd(), tool);
+      console.log(result);
+    } else {
+      const result = perfSetupCommand(process.cwd(), tool);
+      console.log(result);
+    }
+  });
+
+// ─── help ───────────────────────────────────────────────
+program
+  .command("help")
+  .description("List skills by phase, get details on a skill, or find next steps")
+  .argument("[skill]", "Skill name for details")
+  .option("--next <skill>", "Show next steps after a skill")
+  .option("--phase <phase>", "Filter by phase (ideation, planning, etc.)")
+  .action((skill: string, opts) => {
+    const result = helpCommand(process.cwd(), skill, opts.phase, opts.next);
     console.log(result);
   });
 

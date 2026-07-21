@@ -1,6 +1,7 @@
 ---
 name: codewright:spec
 description: "Create or update specifications using memlog"
+phase: planning
 ---
 
 # Codewright Spec

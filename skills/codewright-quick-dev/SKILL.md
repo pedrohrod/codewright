@@ -1,6 +1,7 @@
 ---
 name: codewright:quick-dev
 description: "Rapid implementation for bugs and hotfixes — skip full spec cycle"
+phase: implementation
 ---
 
 # Codewright Quick Dev

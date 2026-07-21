@@ -1,6 +1,7 @@
 ---
 name: codewright:init
 description: "Initialize Codewright structure on the project"
+phase: planning
 ---
 
 # Codewright Init

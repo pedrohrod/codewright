@@ -1,6 +1,7 @@
 ---
 name: codewright:review
 description: "Review implementation with parallel subagents"
+phase: review
 ---
 
 # Codewright Review

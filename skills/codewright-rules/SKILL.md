@@ -1,6 +1,7 @@
 ---
 name: codewright:rules
 description: "Manage project rules — add, list, review project-specific guidelines for agents"
+phase: operations
 ---
 
 # Codewright Rules
