@@ -35,13 +35,44 @@ npx codewright init
 
 ## Quick Start
 
-### 1. Initialize your project
+### Initialize
 
 ```bash
 npx codewright init
 ```
 
-This creates:
+### Using with Claude Code / Verboo Code
+
+After init, talk to the agent:
+
+| You say | The agent does |
+|---------|---------------|
+| `codewright:spec` | Creates a specification from your idea |
+| `codewright:architecture` | Generates architecture decisions |
+| `codewright:epic` | Breaks spec into epics and stories |
+| `codewright:story` | Creates stories with I/O Matrix |
+| `codewright:develop` | **Orchestrates full workflow**: readiness → dev → quality → test → review |
+| `codewright:quality` | Analyzes code (SOLID, DRY, naming) |
+| `codewright:review` | Parallel code review (3 reviewers) |
+| `codewright:test` | Generates tests from I/O Matrix |
+| `codewright:document` | Generates JSDoc, README, API docs |
+
+The skills are automatically loaded from `.agents/skills/`. No configuration needed.
+
+### Or use the CLI directly
+
+```bash
+codewright spec my-feature         # create spec
+codewright story my-feature S001 "Login"  # create story
+codewright dev my-feature S001      # start implementation
+codewright review my-feature S001   # prepare review
+codewright status                   # project health
+codewright help                     # list all skills by phase
+```
+
+## What codewright creates
+
+Running `npx codewright init` creates:
 
 ```
 your-project/
@@ -50,7 +81,7 @@ your-project/
 │   ├── config.user.yaml     # Your personal overrides (gitignored)
 │   ├── AGENTS.md            # Rules for AI agents
 │   └── custom/              # Per-skill customization
-├── .agents/skills/          # 13 AI agent skills
+├── .agents/skills/          # 25 AI agent skills
 │   ├── codewright-spec/
 │   ├── codewright-story/
 │   ├── codewright-dev/
@@ -105,7 +136,7 @@ npx codewright review my-feature S001
 
 ## Skills
 
-16 AI-powered skills installed automatically:
+25 AI-powered skills installed automatically:
 
 ### Core Workflow
 | Skill | Description |
