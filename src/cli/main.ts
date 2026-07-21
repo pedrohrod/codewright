@@ -11,6 +11,7 @@ import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.j
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
+import { depsCheckCommand } from "./commands/deps.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -181,6 +182,15 @@ program
   .description("Generate CI workflow for the project")
   .action(() => {
     const result = ciGenerateCommand(process.cwd());
+    console.log(result);
+  });
+
+// ─── deps ────────────────────────────────────────────────
+program
+  .command("deps")
+  .description("Check project dependencies for outdated packages")
+  .action(() => {
+    const result = depsCheckCommand(process.cwd());
     console.log(result);
   });
 
