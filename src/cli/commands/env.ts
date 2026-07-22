@@ -41,10 +41,9 @@ export function envListCommand(cwd: string): string {
   const vars = lines.map((l) => {
     const eqIdx = l.indexOf("=");
     if (eqIdx === -1) return `  - ${l}`;
-    const key = l.slice(0, eqIdx);
-    const val = l.slice(eqIdx + 1).replace(/["']/g, "");
-    const display = val.length > 30 ? `${val.slice(0, 27)}...` : val;
-    return `  - ${key} = ${display}`;
+    const key = l.slice(0, eqIdx).trim();
+    const isSet = l.slice(eqIdx + 1).trim().length > 0;
+    return `  - ${key}: ${isSet ? "set" : "unset"}`;
   });
 
   return `Environment variables (${vars.length}):\n${vars.join("\n")}`;

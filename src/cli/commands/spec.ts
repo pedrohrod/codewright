@@ -1,9 +1,8 @@
 import { resolve } from "node:path";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { loadConfig, resolveSpecDir } from "../../config/loader.js";
 import { memlog } from "../../memlog/memlog.js";
-import { writeArtifact } from "../../artifacts/writer.js";
 import { specTemplate } from "../../templates/spec-template.js";
 
 export interface SpecCreateOptions {
@@ -76,9 +75,8 @@ export function specHistoryCommand(cwd: string, slug: string): string {
   }
 
   try {
-    const log = execSync(`git log --oneline --format="%h %ad %s" --date=short -20 -- .`, {
-      cwd: specDir,
-      encoding: "utf-8",
+    const log = execFileSync("git", ["log", "--oneline", "--format=%h %ad %s", "--date=short", "-20", "--", "."], {
+      cwd: specDir, encoding: "utf-8",
     }).trim();
 
     if (!log) {
@@ -101,9 +99,8 @@ export function specDiffCommand(cwd: string, slug: string, from?: string): strin
 
   try {
     const fromRef = from || "HEAD~1";
-    const diff = execSync(`git diff ${fromRef}..HEAD -- .`, {
-      cwd: specDir,
-      encoding: "utf-8",
+    const diff = execFileSync("git", ["diff", `${fromRef}..HEAD`, "--", "."], {
+      cwd: specDir, encoding: "utf-8",
     }).trim();
 
     if (!diff) {
@@ -126,7 +123,7 @@ export function specVersionCommand(cwd: string, slug: string): string {
 
   try {
     // Stage all changes in spec directory
-    execSync("git add .", { cwd: specDir });
+    execFileSync("git", ["add", "--", "."], { cwd: specDir });
 
     // Check if there are changes to commit
     const status = execSync("git status --porcelain", {
@@ -140,7 +137,7 @@ export function specVersionCommand(cwd: string, slug: string): string {
 
     // Create version commit
     const timestamp = new Date().toISOString().split("T")[0];
-    execSync(`git commit -m "version: ${slug} ${timestamp}"`, { cwd: specDir });
+    execFileSync("git", ["commit", "-m", `version: ${slug} ${timestamp}`], { cwd: specDir });
 
     // Get the commit hash
     const hash = execSync("git rev-parse --short HEAD", {

@@ -1,10 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadConfig } from "../../config/loader.js";
 
 function generateNodeDockerfile(framework: string): string {
   return `# Build stage
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -27,12 +27,14 @@ COPY --from=builder /app/public ./public` : ""}
 
 EXPOSE ${framework === "next" ? "3000" : "3000"}
 
+USER node
+
 CMD ${framework === "next" ? '["npm", "start"]' : framework === "express" ? '["node", "dist/index.js"]' : '["node", "dist/index.mjs"]'}
 `;
 }
 
 function generatePythonDockerfile(): string {
-  return `FROM python:3.12-alpine
+  return `FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -41,6 +43,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8000
 
 CMD ["python", "main.py"]
@@ -48,7 +53,7 @@ CMD ["python", "main.py"]
 }
 
 function generateGoDockerfile(): string {
-  return `FROM golang:1.22-alpine AS builder
+  return `FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -56,9 +61,10 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
 
-FROM scratch
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /app/server /server
 EXPOSE 8080
+USER nonroot:nonroot
 CMD ["/server"]
 `;
 }

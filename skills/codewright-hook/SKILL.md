@@ -1,34 +1,14 @@
 ---
-name: codewright:hook
-description: "Manage git hooks — install pre-commit checks, commit message validation"
-phase: operations
+name: codewright-hook
+description: Inspect, install, or remove Codewright Git hooks while preserving existing hook behavior. Use for "$codewright-hook", "codewright hook", legacy "codewright:hook", pre-commit setup, commit-message validation, or hook diagnostics. Do not overwrite or disable existing hooks silently.
 ---
 
-# Codewright Hook
+# Codewright Hooks
 
-## Activation
-When the user says: "codewright hook", "install hooks", "git hooks", "setup hooks", "pre-commit"
-
-## Operation
-<workflow>
-  <step n="1" goal="Install git hooks">
-    <action>Run: `npx codewright hook install`</action>
-    <action>This installs:
-      - **pre-commit**: Check for TODO/FIXME without ticket numbers, debugger statements
-      - **commit-msg**: Validate conventional commit format (feat:, fix:, etc.)
-    </action>
-  </step>
-  <step n="2" goal="Explain hooks">
-    <action>Tell the user:
-      - Hooks are stored in `.codewright/hooks/` and symlinked to `.git/hooks/`
-      - To remove hooks, delete the files from `.git/hooks/`
-      - Hooks can be customized by editing `.codewright/hooks/<name>`
-    </action>
-  </step>
-  <step n="3" goal="List hooks">
-    <action>Run: `npx codewright hook list` to see current hook status</action>
-  </step>
-</workflow>
-
-## Finalization
-Git hooks installed. Remind the user that hooks run automatically on git commit.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, `.git/hooks`, `.codewright/hooks`, repository scripts, and hook customization.
+2. Run `npx codewright hook list` before changing anything.
+3. Preview the exact hooks, checks, blocking behavior, and existing-hook chaining.
+4. Install only after explicit approval. Back up existing hooks, chain them in a deterministic order, and propagate non-zero exit codes.
+5. Validate commit messages against Conventional Commits without rejecting repository-approved additional types.
+6. Support `npx codewright hook uninstall` to remove only Codewright-managed wiring and restore preserved hooks.
+7. Test installed hooks with passing and failing fixtures, then report paths, backups, and results.

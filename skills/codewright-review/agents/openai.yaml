@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Review"
+  short_description: "Review a story against its contract"
+  default_prompt: "Use $codewright-review to review this story implementation against its contract."
+

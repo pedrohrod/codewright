@@ -3,14 +3,22 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import {
+  formatAgentMenu,
+  getAgentDefinition,
+  parseAgentTargets,
+  parseInteractiveAgentSelection,
+  type AgentTarget,
+} from "../agents/registry.js";
 import { initCommand } from "./commands/init.js";
 import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffCommand, specVersionCommand, specSyncCommand } from "./commands/spec.js";
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { commitCommand } from "./commands/commit.js";
-import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
+import { hookInstallCommand, hookListCommand, hookUninstallCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
@@ -32,6 +40,20 @@ function getVersion(): string {
   }
 }
 
+async function selectAgentTargets(option?: string): Promise<AgentTarget[]> {
+  if (option !== undefined) return parseAgentTargets(option);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return [];
+
+  console.log(formatAgentMenu());
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await prompt.question("> ");
+    return parseInteractiveAgentSelection(answer);
+  } finally {
+    prompt.close();
+  }
+}
+
 const program = new Command();
 
 program
@@ -44,15 +66,30 @@ program
   .command("init")
   .description("Initialize codewright in the project")
   .option("--dir <path>", "Target directory", ".")
-  .action((opts) => {
-    const result = initCommand(process.cwd(), opts.dir);
-    console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
-    console.log(`  Output: ${result.outputDir}`);
-    console.log(`  Skills: .agents/skills/`);
-    const d = result.detected;
-    if (d.framework) console.log(`  Framework: ${d.framework}`);
-    if (d.test_runner) console.log(`  Test runner: ${d.test_runner}`);
-    if (d.project_language) console.log(`  Language: ${d.project_language}`);
+  .option("--agents <targets>", "Comma-separated agents, 'all', or 'core'")
+  .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
+  .action(async (opts) => {
+    try {
+      const agents = await selectAgentTargets(opts.agents);
+      const result = initCommand(process.cwd(), opts.dir, {
+        upgradeSkills: opts.upgradeSkills,
+        agents,
+      });
+      console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
+      console.log(`  Output: ${result.outputDir}`);
+      console.log("  Skills: .agents/skills/ (universal core)");
+      const labels = result.agentTargets.map((target) => getAgentDefinition(target).label);
+      console.log(`  Agents: ${labels.length > 0 ? labels.join(", ") : "core only"}`);
+      if (result.adapterFiles.length > 0) console.log(`  Adapters: ${result.adapterFiles.length} files generated`);
+      for (const warning of result.warnings) console.warn(`  Warning: ${warning}`);
+      const d = result.detected;
+      if (d.framework) console.log(`  Framework: ${d.framework}`);
+      if (d.test_runner) console.log(`  Test runner: ${d.test_runner}`);
+      if (d.project_language) console.log(`  Language: ${d.project_language}`);
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    }
   });
 
 // ─── spec ───────────────────────────────────────────────
@@ -65,6 +102,7 @@ program
   .option("--history", "View spec version history")
   .option("--diff [from] [to]", "Diff between spec versions")
   .option("--snapshot", "Create a new version snapshot")
+  .option("--yes", "Confirm snapshot commits in non-interactive use")
   .option("--sync", "Sync spec with code (compare requirements vs implementation)")
   .action((slug: string, opts) => {
     if (!slug) {
@@ -87,6 +125,10 @@ program
       const result = specDiffCommand(process.cwd(), slug, from);
       console.log(result);
     } else if (opts.snapshot) {
+      if (!opts.yes) {
+        console.log("Snapshot would create a Git commit. Rerun with --snapshot --yes to confirm.");
+        return;
+      }
       const result = specVersionCommand(process.cwd(), slug);
       console.log(result);
     } else if (opts.sync) {
@@ -156,16 +198,28 @@ program
 // ─── commit ─────────────────────────────────────────────
 program
   .command("commit")
-  .description("Commit story changes to a feature branch and push")
+  .description("Preview or create a story-scoped commit")
   .argument("<spec>", "Spec slug")
   .argument("<id>", "Story ID")
   .option("--branch <name>", "Custom branch name")
   .option("--amend", "Amend to last commit instead of new commit")
+  .option("--push", "Push the branch to origin after committing")
+  .option("--yes", "Confirm the local commit in non-interactive use")
+  .option("--dry-run", "Show the branch and files without committing")
   .action((spec: string, id: string, opts) => {
+    const previewOnly = opts.dryRun || !opts.yes;
     const result = commitCommand(process.cwd(), spec, id, {
       branch: opts.branch,
       amend: opts.amend,
+      push: opts.push,
+      dryRun: previewOnly,
     });
+    if (previewOnly && result.filesChanged > 0) {
+      console.log(`Commit preview for ${result.branch}:`);
+      for (const file of result.plannedFiles) console.log(`  - ${file}`);
+      if (!opts.dryRun) console.log("Rerun with --yes to create the local commit; add --push to push it.");
+      return;
+    }
     if (result.commitHash) {
       console.log(`✓ Story committed to branch ${result.branch}`);
       console.log(`  Commit: ${result.commitHash}`);
@@ -200,11 +254,13 @@ program
 program
   .command("hook")
   .description("Manage git hooks for the project")
-  .argument("[action]", "Action: install or list", "list")
+  .argument("[action]", "Action: install, uninstall, or list", "list")
   .action((action: string) => {
     if (action === "install") {
       const result = hookInstallCommand(process.cwd());
       console.log(result);
+    } else if (action === "uninstall") {
+      console.log(hookUninstallCommand(process.cwd()));
     } else {
       const result = hookListCommand(process.cwd());
       console.log(result);
@@ -215,8 +271,9 @@ program
 program
   .command("ci")
   .description("Generate CI workflow for the project")
-  .action(() => {
-    const result = ciGenerateCommand(process.cwd());
+  .option("--force", "Replace an existing generated workflow after review")
+  .action((opts) => {
+    const result = ciGenerateCommand(process.cwd(), { force: opts.force });
     console.log(result);
   });
 
@@ -309,4 +366,4 @@ program
     console.log(result);
   });
 
-program.parse(process.argv);
+await program.parseAsync(process.argv);

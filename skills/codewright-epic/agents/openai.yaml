@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Epic"
+  short_description: "Decompose specs into valuable stories"
+  default_prompt: "Use $codewright-epic to decompose this specification into traceable stories."
+

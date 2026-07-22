@@ -1,43 +1,14 @@
 ---
-name: codewright:quick-dev
-description: "Rapid implementation for bugs and hotfixes — skip full spec cycle"
-phase: implementation
+name: codewright-quick-dev
+description: Diagnose and implement a small, well-bounded bug fix or hotfix without the full Codewright specification cycle. Use for "$codewright-quick-dev", "codewright quick-dev", legacy "codewright:quick-dev", quick fix, hotfix, or a reproducible localized bug. Do not use for ambiguous, cross-cutting, or architectural features.
 ---
 
-# Codewright Quick Dev
+# Codewright Quick Development
 
-## Activation
-When the user says: "codewright quick-dev", "quick fix", "hotfix", "bug fix", "rapid implementation", "fix this bug"
-
-## Operation
-<workflow>
-  <step n="1" goal="Understand the problem">
-    <action>Ask the user to describe the bug or feature briefly</action>
-    <action>Identify: what should happen, what happens instead, steps to reproduce</action>
-  </step>
-  <step n="2" goal="Locate relevant code">
-    <action>Search the codebase for the relevant files</action>
-    <action>Read the surrounding context to understand the pattern</action>
-  </step>
-  <step n="3" goal="Implement fix">
-    <action>Write the minimum code change</action>
-    <action>Follow existing code patterns (no new abstractions)</action>
-    <action>Add inline comments explaining non-obvious logic</action>
-  </step>
-  <step n="4" goal="Write minimal tests">
-    <action>Add test case for the bug scenario</action>
-    <action>Verify existing tests still pass</action>
-  </step>
-  <step n="5" goal="Prepare for review">
-    <action>Generate summary of what changed and why</action>
-    <action>Suggest running `codewright:review`</action>
-  </step>
-  <step n="6" goal="Commit changes (if auto_commit is enabled)">
-    <action>Check if `auto_commit = true` in customization for codewright-quick-dev</action>
-    <action>If true: run `codewright:commit` to create a feature branch and commit</action>
-    <action>If false: skip — commit is manual</action>
-  </step>
-</workflow>
-
-## Finalization
-Fix implemented. User should run `codewright review <name> <id>` for formal review, then `codewright commit <name> <id>` to commit.
+1. Capture expected behavior, actual behavior, reproduction steps, impact, and rollback constraints.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, relevant code, tests, recent changes, and quick-development customization.
+3. Reproduce the bug or establish a failing regression test before editing. If reproduction is impossible, state the uncertainty.
+4. Make the smallest change that fixes the root cause and follows existing patterns.
+5. Add a regression test and run focused plus required repository checks.
+6. Review the diff for unintended scope, security impact, and compatibility.
+7. Report root cause, changed behavior, tests, risks, and rollback. Do not commit or push without separate authorization.

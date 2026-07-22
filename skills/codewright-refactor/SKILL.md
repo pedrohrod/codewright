@@ -1,45 +1,15 @@
 ---
-name: codewright:refactor
-description: "Apply design patterns and refactoring — Strategy, Factory, Observer, etc."
-phase: implementation
+name: codewright-refactor
+description: Safely improve existing code structure while preserving observable behavior. Use for "$codewright-refactor", "codewright refactor", legacy "codewright:refactor", reduce duplication or complexity, extract responsibilities, or apply a justified design pattern. Do not force patterns onto simple code or mix feature behavior into a refactor.
 ---
 
 # Codewright Refactor
 
-## Activation
-When the user says: "codewright refactor", "apply pattern", "design pattern", "refactor code", "suggest pattern", "improve design"
-
-## Operation
-<workflow>
-  <step n="1" goal="Analyze the code">
-    <action>Read the target code and identify design problems:
-      - **Switch/if-else chains** → suggest Strategy or Command pattern
-      - **Complex object construction** → suggest Builder or Factory pattern
-      - **Tight coupling** → suggest Dependency Injection
-      - **God classes / Long methods** → suggest Extract Class / Extract Method
-      - **Observer-like callbacks** → formalize with Observer or Event pattern
-      - **Feature Envy** → suggest Move Method
-    </action>
-  </step>
-  <step n="2" goal="Propose pattern options">
-    <action>For each problem, present 1-2 pattern options with:
-      - Pattern name and intent
-      - How it applies to this specific code
-      - Before/after code sketches
-      - Trade-offs (complexity vs benefit)
-    </action>
-    <action>Let the user choose before proceeding</action>
-  </step>
-  <step n="3" goal="Apply refactoring incrementally">
-    <action>Apply one refactoring at a time</action>
-    <action>After each step: verify tests still pass</action>
-    <action>If no tests exist, create a safety net first</action>
-  </step>
-  <step n="4" goal="Document changes">
-    <action>Explain what changed and why</action>
-    <action>Update any relevant documentation</action>
-  </step>
-</workflow>
-
-## Finalization
-Refactoring complete. Confirm tests pass and summarize what patterns were applied.
+1. Define the exact smell, desired improvement, behavioral boundary, and success measure.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, callers, tests, types, quality findings, and refactor customization.
+3. Establish a passing safety net for current behavior. Add characterization tests when coverage is insufficient.
+4. Propose the smallest structural change and explain alternatives only when the trade-off is material.
+5. Apply one coherent transformation at a time and run focused tests after each step.
+6. Prefer extraction, simplification, and dependency-boundary improvements over introducing a named pattern.
+7. Run required full checks and compare public behavior, performance-sensitive paths, and serialized interfaces.
+8. Report the smell removed, structural changes, verification, and any intentionally deferred cleanup.

@@ -1,6 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadConfig } from "../../config/loader.js";
 
 const PRE_COMMIT_HOOK = `#!/bin/sh
 # Codewright pre-commit hook
@@ -65,7 +64,6 @@ exit 0
 `;
 
 export function hookInstallCommand(cwd: string) {
-  const config = loadConfig(cwd);
   const codewrightHookDir = resolve(cwd, ".codewright", "hooks");
   const gitHookDir = resolve(cwd, ".git", "hooks");
 
@@ -101,9 +99,12 @@ export function hookInstallCommand(cwd: string) {
         writeFileSync(backupPath, existingContent, { mode: 0o755 });
         // Write wrapper that runs both
         const wrapper = `#!/bin/sh
-# Codewright wrapper - runs existing hook then codewright
+# Codewright wrapper - preserves the existing hook, then runs Codewright
+if [ -f "${backupPath}" ]; then
+  sh "${backupPath}" "$@" || exit $?
+fi
 if [ -f "${hookPath}" ]; then
-  sh "${hookPath}"
+  sh "${hookPath}" "$@" || exit $?
 fi
 `;
         writeFileSync(gitHookPath, wrapper, { mode: 0o755 });
@@ -117,6 +118,29 @@ fi
   - commit-msg (validates conventional commit format)
 
 Hooks stored in .codewright/hooks/`;
+}
+
+export function hookUninstallCommand(cwd: string) {
+  const gitHookDir = resolve(cwd, ".git", "hooks");
+  const codewrightHookDir = resolve(cwd, ".codewright", "hooks");
+  if (!existsSync(gitHookDir)) return "No .git/hooks directory found.";
+
+  let removed = 0;
+  for (const hook of ["pre-commit", "commit-msg"]) {
+    const gitHookPath = resolve(gitHookDir, hook);
+    const managedPath = resolve(codewrightHookDir, hook);
+    const backupPath = resolve(gitHookDir, hook + ".backup");
+    if (existsSync(backupPath)) {
+      writeFileSync(gitHookPath, readFileSync(backupPath), { mode: 0o755 });
+      unlinkSync(backupPath);
+      removed++;
+    } else if (existsSync(gitHookPath) && readFileSync(gitHookPath, "utf-8").includes("Codewright")) {
+      unlinkSync(gitHookPath);
+      removed++;
+    }
+    if (existsSync(managedPath)) unlinkSync(managedPath);
+  }
+  return "✓ Removed " + removed + " Codewright hook(s) and restored available backups.";
 }
 
 export function hookListCommand(cwd: string) {

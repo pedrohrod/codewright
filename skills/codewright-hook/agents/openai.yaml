@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Hooks"
+  short_description: "Manage Git hooks without data loss"
+  default_prompt: "Use $codewright-hook to inspect and safely configure this repository's Git hooks."
+

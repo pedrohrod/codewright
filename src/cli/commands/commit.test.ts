@@ -172,4 +172,31 @@ describe("commitCommand", () => {
     writeFileSync(join(tmpDir, "test2.ts"), "const y = 2;", "utf-8");
     expect(() => commitCommand(tmpDir, "test", "S001")).toThrow("already exists");
   });
+
+  it("should reject unrelated staged changes", () => {
+    const tmpDir = createTestRepo();
+    tmpDirs.push(tmpDir);
+    execSync(`node ${CLI} init`, { cwd: tmpDir });
+    execSync(`node ${CLI} spec test`, { cwd: tmpDir });
+    createStoryFile(tmpDir, "test", "S001", "Scoped change");
+    writeFileSync(join(tmpDir, "test.ts"), "const x = 1;", "utf-8");
+    writeFileSync(join(tmpDir, "unrelated.ts"), "const y = 2;", "utf-8");
+    execSync("git add unrelated.ts", { cwd: tmpDir });
+
+    expect(() => commitCommand(tmpDir, "test", "S001")).toThrow("Unrelated staged changes");
+  });
+
+  it("should preview without creating a branch or changing story status", () => {
+    const tmpDir = createTestRepo();
+    tmpDirs.push(tmpDir);
+    execSync(`node ${CLI} init`, { cwd: tmpDir });
+    execSync(`node ${CLI} spec test`, { cwd: tmpDir });
+    createStoryFile(tmpDir, "test", "S001", "Preview change");
+    writeFileSync(join(tmpDir, "test.ts"), "const x = 1;", "utf-8");
+
+    const result = commitCommand(tmpDir, "test", "S001", { dryRun: true });
+    expect(result.commitHash).toBeNull();
+    expect(result.plannedFiles).toContain("test.ts");
+    expect(execSync("git branch --list 'story/S001-preview-change'", { cwd: tmpDir, encoding: "utf-8" }).trim()).toBe("");
+  });
 });

@@ -1,47 +1,15 @@
 ---
-name: codewright:commit
-description: "Commit story changes to a feature branch and merge to main"
-phase: implementation
+name: codewright-commit
+description: Prepare and create a story-scoped Codewright Git commit, optionally pushing its feature branch after explicit approval. Use for "$codewright-commit", "codewright commit", legacy "codewright:commit", commit a story, create a story branch, or finish a reviewed story. Do not stage unrelated changes, merge branches, or push without explicit authorization.
 ---
 
 # Codewright Commit
 
-## Activation
-When the user says: "codewright commit", "commit story", "create branch", "commit changes", "merge story", "story done"
-
-## Operation
-<workflow>
-  <step n="1" goal="Verify the story is ready for commit">
-    <action>Confirm the story has been implemented and all tests pass</action>
-    <action>Verify the story status is "review" or "done"</action>
-  </step>
-  <step n="2" goal="Run the commit command">
-    <action>Run: `npx codewright commit <spec> <id>`</action>
-    <action>This creates a feature branch, stages all changes, commits, and pushes the branch</action>
-    <action>The branch is pushed to origin for PR creation — merge is done by the user</action>
-  </step>
-  <step n="3" goal="Handle options (if applicable)">
-    <action>Use `--branch <name>` for a custom branch name (default: `story/<id>-<slug>`)</action>
-    <action>Use `--amend` to amend the last commit instead of creating a new one</action>
-  </step>
-  <step n="4" goal="Confirm result">
-    <action>Show the commit hash, branch name, files changed, and merge result</action>
-    <action>Story status is automatically updated to "done"</action>
-  </step>
-</workflow>
-
-## Conventional Commit Format
-The commit message follows conventional commits:
-`feat(<slug>): <title> (#<id>)`
-
-Examples:
-- `feat(login-form): Create user login form (#S001)`
-- `fix(validation): Fix edge case in email validation (#S002)`
-- `refactor(auth): Extract auth middleware (#S003)`
-
-## Branch Naming Convention
-Branches are named `story/<id>-<title-slug>` by default.
-Example: Story "Create login form" with ID S001 → branch `story/S001-create-login-form`
-
-## Finalization
-Story committed to feature branch and pushed to origin. Status updated to "done". User can now open a PR or merge locally.
+1. Load the story, Code Map, review artifact, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, Git status, current branch, remotes, and commit customization.
+2. Require a readiness/review state, passing required checks, no unresolved High findings, and an exact list of story-owned files.
+3. Run `npx codewright commit <spec> <id> --dry-run` and inspect the proposed branch, message, files, story-status update, and unrelated changes.
+4. Refuse to proceed when the Code Map is incomplete, unrelated changes are staged, the target branch already exists, or required checks failed.
+5. Present the exact commit operation and obtain confirmation. In a non-interactive environment, use `--yes` only when the user already authorized the commit.
+6. Create the local commit with Conventional Commits syntax. Include the story status and changelog update in the same commit.
+7. Push only when the user explicitly requested it, using `--push`. Never merge automatically.
+8. Report the commit hash, branch, committed files, push result, and any remaining worktree changes. Read [references/commits.md](references/commits.md) for message rules.

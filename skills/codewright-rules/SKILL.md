@@ -1,37 +1,14 @@
 ---
-name: codewright:rules
-description: "Manage project rules — add, list, review project-specific guidelines for agents"
-phase: operations
+name: codewright-rules
+description: Inspect, add, revise, or validate project-specific Codewright agent rules. Use for "$codewright-rules", "codewright rules", legacy "codewright:rules", manage project guidance, codify recurring review feedback, or check rules against the repository. Do not add vague preferences or duplicate enforced tooling.
 ---
 
 # Codewright Rules
 
-## Activation
-When the user says: "codewright rules", "manage rules", "add rule", "project rules", "update rules"
-
-## Operation
-<workflow>
-  <step n="1" goal="Read current rules">
-    <action>Read all files from `.codewright/rules/`</action>
-    <action>List existing rules files with descriptions</action>
-  </step>
-  <step n="2" goal="Ask what to do">
-    <action>Options:
-      - Add a new rule
-      - Edit an existing rule
-      - Review rules against current code
-      - Sync with spec requirements
-    </action>
-  </step>
-  <step n="3" goal="Add or edit rules">
-    <action>Create or update `.codewright/rules/DEFAULT.md` with the new rule</action>
-    <action>Ensure rules are clear, concise, and actionable</action>
-  </step>
-  <step n="4" goal="Review rules">
-    <action>Check each rule applies to the current code</action>
-    <action>Suggest code changes to match rules if needed</action>
-  </step>
-</workflow>
-
-## Finalization
-Rules saved. Remind the user that rules are loaded automatically by codewright skills during development.
+1. Read root and nested `AGENTS.md` plus every applicable `.codewright/rules/*.md` file in precedence order.
+2. Identify whether the requested behavior belongs in a prompt, project rule, nested rule, tool configuration, hook, or test.
+3. Write rules that are scoped, imperative, verifiable, and paired with the correct commands or examples.
+4. Put guidance in the narrowest applicable location and avoid repeating content already enforced by formatters, linters, or tests.
+5. Present rule changes and affected scopes before writing when they materially change team workflow.
+6. Validate that updated rules do not conflict and that every referenced command exists.
+7. Report the precedence chain, changes, enforcement mechanism, and any unresolved conflict.

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Quality"
+  short_description: "Review maintainability with evidence"
+  default_prompt: "Use $codewright-quality to assess this change's maintainability."
+

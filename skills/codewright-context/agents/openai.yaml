@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Context"
+  short_description: "Refresh safe AI project context"
+  default_prompt: "Use $codewright-context to refresh the AI-readable project context."
+

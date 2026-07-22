@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Rules"
+  short_description: "Manage scoped project agent guidance"
+  default_prompt: "Use $codewright-rules to add or validate this project's agent guidance."
+

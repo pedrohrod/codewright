@@ -19,7 +19,7 @@ codewright orchestrates the full software development lifecycle through AI agent
 4. **Dev** — Implement with TDD (RED → GREEN → REFACTOR)
 5. **Review** — Parallel code review with specialized agents
 
-It works with **Verboo Code**, **Claude Code**, or any AI agent that loads skills from `.agents/skills/`.
+It supports **Codex, Claude Code, Gemini CLI, GitHub Copilot, OpenCode, Windsurf, Cline, and Cursor** from one canonical skill set.
 
 ## Installation
 
@@ -41,25 +41,48 @@ npx codewright init
 npx codewright init
 ```
 
-### Using with Claude Code / Verboo Code
+In an interactive terminal, choose one or more agents or select **all**. For automation:
+
+```bash
+npx codewright init --agents claude,cursor
+npx codewright init --agents all
+npx codewright init --agents core
+```
+
+Without an interactive terminal or `--agents`, Codewright installs the universal `.agents/skills` core only.
+
+### Using with AI agents
 
 After init, talk to the agent:
 
 | You say | The agent does |
 |---------|---------------|
-| `codewright:spec` | Creates a specification from your idea |
-| `codewright:architecture` | Generates architecture decisions |
-| `codewright:epic` | Breaks spec into epics and stories |
-| `codewright:story` | Creates stories with I/O Matrix |
-| `codewright:develop` | **Orchestrates full workflow**: readiness → dev → quality → test → review → commit |
-| `codewright:quality` | Analyzes code (SOLID, DRY, naming) |
-| `codewright:review` | Parallel code review (3 reviewers) |
-| `codewright:commit` | Commit story to feature branch and merge to main |
-| `codewright:test` | Generates tests from I/O Matrix |
-| `codewright:document` | Generates JSDoc, README, API docs |
-| `codewright:perf` | Performance testing with k6 |
+| `$codewright-spec` | Creates a specification from your idea |
+| `$codewright-architecture` | Generates architecture decisions |
+| `$codewright-epic` | Breaks spec into epics and stories |
+| `$codewright-story` | Creates stories with I/O Matrix |
+| `$codewright-develop` | Orchestrates readiness → dev → quality → test → review |
+| `$codewright-quality` | Analyzes maintainability with evidence |
+| `$codewright-review` | Reviews a story against its contract |
+| `$codewright-commit` | Previews and creates a scoped local commit |
+| `$codewright-test` | Designs and implements meaningful tests |
+| `$codewright-testgen` | Scaffolds TODO tests from story scenarios |
+| `$codewright-perf` | Designs and analyzes approved performance tests |
 
-The skills are automatically loaded from `.agents/skills/`. No configuration needed.
+| Agent | Native invocation | Installation |
+|-------|-------------------|--------------|
+| Codex | `$codewright-spec` | Universal core |
+| Claude Code | `/codewright-spec` | `.claude/skills` adapter |
+| Gemini CLI | Natural request / automatic | Universal core |
+| GitHub Copilot | `/codewright-spec` or automatic | Universal core |
+| OpenCode | Automatic | Universal core |
+| Windsurf | `@codewright-spec` | Universal core |
+| Cline | Automatic | `.cline/skills` adapter |
+| Cursor | `/codewright-spec` | `.cursor/commands` adapter |
+
+The adapters are small generated pointers. The workflow remains canonical in `.agents/skills`, so agent-specific copies cannot drift.
+
+Skills follow the Agent Skills naming standard. Explicit invocation syntax varies by agent as shown above; legacy phrases such as `codewright:spec` remain recognized by the skill descriptions.
 
 ### Or use the CLI directly
 
@@ -79,16 +102,20 @@ Running `npx codewright init` creates:
 
 ```
 your-project/
+├── AGENTS.md                  # Discoverable project guidance (created only if absent)
 ├── .codewright/
 │   ├── config.yaml          # Auto-detected stack & settings
+│   ├── agents.yaml          # Selected agent targets
 │   ├── config.user.yaml     # Your personal overrides (gitignored)
-│   ├── AGENTS.md            # Rules for AI agents
 │   └── custom/              # Per-skill customization
 ├── .agents/skills/          # 25 AI agent skills
 │   ├── codewright-spec/
 │   ├── codewright-story/
 │   ├── codewright-dev/
-│   └── ... (10 more)
+│   └── ... (22 more)
+├── .claude/skills/          # Optional generated Claude adapters
+├── .cline/skills/           # Optional generated Cline adapters
+├── .cursor/commands/        # Optional generated Cursor commands
 └── .codewright-output/      # Generated artifacts
     └── project-context.md   # Auto-generated project context
 ```
@@ -124,6 +151,8 @@ npx codewright review my-feature S001
 | Command | Description |
 |---------|-------------|
 | `codewright init` | Initialize project with skills and config |
+| `codewright init --agents <list>` | Initialize for selected agents (`all` or comma-separated) |
+| `codewright init --agents core` | Install only the universal Agent Skills core |
 | `codewright spec <slug>` | Create a new specification |
 | `codewright spec <slug> --update` | Re-derive SPEC.md from memlog |
 | `codewright spec <slug> --input <file>` | Seed spec from existing document |
@@ -135,7 +164,8 @@ npx codewright review my-feature S001
 | `codewright story <spec> <id> "<title>"` | Create a story |
 | `codewright dev <spec> <id>` | Start implementing a story |
 | `codewright review <spec> <id>` | Prepare code review |
-| `codewright commit <spec> <id>` | Commit story to feature branch and merge to main |
+| `codewright commit <spec> <id> --dry-run` | Preview a story-scoped commit |
+| `codewright commit <spec> <id> --yes [--push]` | Create a local commit; push only when requested |
 | `codewright perf [setup\|run] [k6\|artillery]` | Performance testing with k6 |
 | `codewright context` | Regenerate project context |
 
@@ -146,32 +176,43 @@ npx codewright review my-feature S001
 ### Core Workflow
 | Skill | Description |
 |-------|-------------|
-| `codewright:spec` | Create specifications from ideas |
-| `codewright:architecture` | Design architecture decisions |
-| `codewright:epic` | Break spec into epics and stories (faster spec-to-implementation) |
-| `codewright:story` | Break capabilities into stories |
-| `codewright:develop` | **Orchestrate full workflow** — readiness → dev → quality → test → review → commit |
-| `codewright:dev` | Implement a single story (TDD) |
-| `codewright:review` | Parallel code review (3 reviewers) |
-| `codewright:commit` | Commit story to feature branch and merge to main |
-| `codewright:readiness` | Check if story is ready to implement |
+| `$codewright-spec` | Create traceable specifications from ideas |
+| `$codewright-architecture` | Design architecture decisions |
+| `$codewright-epic` | Break specs into value-oriented epics and stories |
+| `$codewright-story` | Create implementation-ready stories |
+| `$codewright-develop` | Orchestrate gated multi-story development |
+| `$codewright-dev` | Implement a single story with TDD |
+| `$codewright-review` | Review a story against its baseline and contract |
+| `$codewright-commit` | Create a safe story-scoped commit |
+| `$codewright-readiness` | Check if a story is ready to implement |
 
 ### Development Support
 | Skill | Description |
 |-------|-------------|
-| `codewright:quality` | Analyze code quality (SOLID, DRY, naming) |
-| `codewright:test` | Generate tests (unit, integration, fixtures) |
-| `codewright:refactor` | Apply design patterns (Strategy, Factory, etc.) |
-| `codewright:quick-dev` | Rapid bug fixes and hotfixes |
-| `codewright:document` | Generate JSDoc, README, API docs |
-| `codewright:retrospective` | Sprint review and lessons learned |
-| `codewright:perf` | Performance testing with k6 — setup, run, analyze |
-| `codewright:rules` | Manage project rules (add, list, review) |
-| `codewright:init` | Project setup and initialization |
+| `$codewright-quality` | Analyze maintainability with evidence |
+| `$codewright-test` | Design and implement meaningful tests |
+| `$codewright-testgen` | Scaffold TODO tests from I/O Matrix rows |
+| `$codewright-refactor` | Improve structure while preserving behavior |
+| `$codewright-quick-dev` | Fix small reproducible bugs |
+| `$codewright-document` | Generate verified code and API documentation |
+| `$codewright-retrospective` | Turn delivery evidence into actions |
+| `$codewright-perf` | Design, run, and analyze approved load tests |
+| `$codewright-rules` | Manage scoped project rules |
+| `$codewright-init` | Safely initialize or upgrade Codewright |
+
+### Operations
+| Skill | Description |
+|-------|-------------|
+| `$codewright-context` | Refresh safe AI-readable project context |
+| `$codewright-ci` | Generate and harden GitHub Actions CI |
+| `$codewright-deps` | Audit dependency freshness and vulnerabilities |
+| `$codewright-env` | Validate environment setup without revealing values |
+| `$codewright-deploy` | Generate secure Docker configuration |
+| `$codewright-hook` | Install, inspect, or remove Git hooks safely |
 
 ### How Skills Work
 
-Skills are `.agents/skills/<name>/SKILL.md` files that guide AI agents through workflows. When you say "codewright spec" to an agent, it loads the skill and follows the defined steps.
+Skills are `.agents/skills/<name>/SKILL.md` files following the open Agent Skills format. Agents with native `.agents/skills` support load them directly. Claude, Cline, and Cursor use generated adapters that point back to the same canonical files. When you request "codewright spec", the selected agent loads the workflow and its resources only when needed.
 
 ## Living Specs & Rules
 

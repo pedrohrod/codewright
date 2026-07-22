@@ -41,21 +41,17 @@ function parseIoMatrix(content: string): IoScenario[] {
   return scenarios;
 }
 
-function generateTestCode(specName: string, storyId: string, storyTitle: string, scenarios: IoScenario[]): string {
-  const testName = storyTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+function generateTestCode(_specName: string, _storyId: string, storyTitle: string, scenarios: IoScenario[]): string {
   const desc = storyTitle.replace(/"/g, '\\"');
 
-  let code = `import { describe, it, expect } from "vitest";\n\n`;
+  let code = `import { describe, it } from "vitest";\n\n`;
   code += `describe("${desc}", () => {\n`;
 
   for (const s of scenarios) {
     const testDesc = s.scenario.replace(/"/g, '\\"');
-    code += `  it("should handle scenario ${s.number}: ${testDesc}", () => {\n`;
-    code += `    // Input: ${s.input || "not specified"}\n`;
-    code += `    // Expected: ${s.expected || "not specified"}\n`;
-    code += `    // TODO: Implement test\n`;
-    code += `    expect(true).toBe(true);\n`;
-    code += `  });\n\n`;
+    code += `  // Input: ${s.input || "not specified"}\n`;
+    code += `  // Expected: ${s.expected || "not specified"}\n`;
+    code += `  it.todo("should handle scenario ${s.number}: ${testDesc}");\n\n`;
   }
 
   code += `});\n`;

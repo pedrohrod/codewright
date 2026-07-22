@@ -1,7 +1,6 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
-import { loadConfig } from "../../config/loader.js";
 
 const K6_SCRIPT = `import http from 'k6/http';
 import { sleep, check } from 'k6';

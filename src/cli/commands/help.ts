@@ -1,153 +1,106 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { load } from "js-yaml";
 
 interface SkillInfo {
   name: string;
   description: string;
   phase: string;
-  commands: string[];
-  depends_on: string[];
 }
 
 const PHASE_DISPLAY: Record<string, string> = {
-  ideation: "💡 Ideation",
-  planning: "📋 Planning",
-  preparation: "🔧 Preparation",
-  implementation: "⚙️ Implementation",
-  review: "👀 Review",
-  operations: "🔁 Operations",
-  retrospective: "📊 Retrospective",
+  planning: "Planning",
+  preparation: "Preparation",
+  implementation: "Implementation",
+  review: "Review",
+  operations: "Operations",
+  retrospective: "Retrospective",
+};
+const PHASE_ORDER = ["planning", "preparation", "implementation", "review", "operations", "retrospective"];
+const SKILL_PHASES: Record<string, string> = {
+  "codewright-init": "planning", "codewright-spec": "planning", "codewright-architecture": "planning",
+  "codewright-epic": "planning", "codewright-story": "preparation", "codewright-readiness": "preparation",
+  "codewright-dev": "implementation", "codewright-develop": "implementation", "codewright-quick-dev": "implementation",
+  "codewright-test": "implementation", "codewright-testgen": "implementation", "codewright-quality": "implementation",
+  "codewright-refactor": "implementation", "codewright-review": "review", "codewright-commit": "review",
+  "codewright-context": "operations", "codewright-document": "operations", "codewright-rules": "operations",
+  "codewright-hook": "operations", "codewright-ci": "operations", "codewright-deps": "operations",
+  "codewright-env": "operations", "codewright-deploy": "operations", "codewright-perf": "operations",
+  "codewright-retrospective": "retrospective",
 };
 
-const PHASE_ORDER = ["ideation", "planning", "preparation", "implementation", "review", "operations", "retrospective"];
-
-function parseSkillFrontmatter(filePath: string, skillName: string): SkillInfo {
+function parseSkill(filePath: string, folderName: string): SkillInfo {
   try {
     const content = readFileSync(filePath, "utf-8");
-    const nameMatch = content.match(/^name:\s*(.+)/m);
-    const descMatch = content.match(/^description:\s*(.+)/m);
-    const phaseMatch = content.match(/^phase:\s*(.+)/m);
-
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    const frontmatter = match ? (load(match[1]) as Record<string, unknown>) : {};
+    const name = typeof frontmatter?.name === "string" ? frontmatter.name : folderName;
     return {
-      name: nameMatch?.[1]?.trim() || skillName,
-      description: descMatch?.[1]?.trim()?.replace(/^"/, "").replace(/"$/, "") || "",
-      phase: phaseMatch?.[1]?.trim() || "operations",
-      commands: [],
-      depends_on: [],
+      name,
+      description: typeof frontmatter?.description === "string" ? frontmatter.description : "",
+      phase: SKILL_PHASES[name] || "operations",
     };
   } catch {
-    return { name: skillName, description: "", phase: "operations", commands: [], depends_on: [] };
+    return { name: folderName, description: "", phase: SKILL_PHASES[folderName] || "operations" };
   }
 }
 
 function getAllSkills(cwd: string): SkillInfo[] {
-  const agentsSkills = resolve(cwd, ".agents", "skills");
-  const packageSkills = resolve(cwd, "skills");
-
-  const skillsDir = existsSync(agentsSkills) ? agentsSkills : packageSkills;
-
+  const installed = resolve(cwd, ".agents", "skills");
+  const bundled = resolve(cwd, "skills");
+  const skillsDir = existsSync(installed) ? installed : bundled;
   if (!existsSync(skillsDir)) return [];
-
-  const entries = readdirSync(skillsDir, { withFileTypes: true });
-  const skills: SkillInfo[] = [];
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const skillFile = resolve(skillsDir, entry.name, "SKILL.md");
-    if (!existsSync(skillFile)) continue;
-
-    skills.push(parseSkillFrontmatter(skillFile, entry.name));
-  }
-
-  return skills;
+  return readdirSync(skillsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(resolve(skillsDir, entry.name, "SKILL.md")))
+    .map((entry) => parseSkill(resolve(skillsDir, entry.name, "SKILL.md"), entry.name));
 }
 
-export function helpCommand(cwd: string, skillName?: string, phase?: string, next?: string): string {
+function aliases(name: string): string[] {
+  const short = name.replace(/^codewright-/, "");
+  return [name, short, `codewright:${short}`, `codewright ${short}`];
+}
+
+function findSkill(skills: SkillInfo[], query: string): SkillInfo | undefined {
+  const normalized = query.trim().toLowerCase();
+  return skills.find((skill) => aliases(skill.name).includes(normalized));
+}
+
+export function helpCommand(cwd: string, skillName?: string, phaseFilter?: string, next?: string): string {
   const skills = getAllSkills(cwd);
+  if (skills.length === 0) return "No skills found. Run codewright init first.";
 
-  if (skills.length === 0) {
-    return "No skills found. Run `codewright init` first.";
-  }
-
-  // Help for a specific skill
   if (skillName) {
-    const skill = skills.find((s) => s.name === skillName || s.name.replace("codewright:", "") === skillName);
-    if (!skill) return `Skill '${skillName}' not found. Use 'codewright help' to list all skills.`;
-
-    let help = `## ${skill.name}\n`;
-    help += `${skill.description}\n\n`;
-    help += `**Phase:** ${PHASE_DISPLAY[skill.phase] || skill.phase}\n`;
-
-    // Show next steps
-    const phaseIdx = PHASE_ORDER.indexOf(skill.phase);
-    if (phaseIdx >= 0 && phaseIdx < PHASE_ORDER.length - 1) {
-      const nextPhase = PHASE_ORDER[phaseIdx + 1];
-      const nextSkills = skills.filter((s) => s.phase === nextPhase);
-      if (nextSkills.length > 0) {
-        help += `\n**Next steps (${PHASE_DISPLAY[nextPhase]}):**\n`;
-        for (const ns of nextSkills.slice(0, 3)) {
-          help += `  - ${ns.name}: ${ns.description}\n`;
-        }
-      }
+    const skill = findSkill(skills, skillName);
+    if (!skill) return `Skill '${skillName}' not found. Use codewright help to list all skills.`;
+    const nextPhase = PHASE_ORDER[PHASE_ORDER.indexOf(skill.phase) + 1];
+    const nextSkills = nextPhase ? skills.filter((candidate) => candidate.phase === nextPhase).slice(0, 3) : [];
+    const lines = [`## ${skill.name}`, skill.description, "", `Phase: ${PHASE_DISPLAY[skill.phase] || skill.phase}`];
+    if (nextSkills.length > 0) {
+      lines.push("", `Next steps (${PHASE_DISPLAY[nextPhase]}):`);
+      lines.push(...nextSkills.map((candidate) => `  - ${candidate.name}: ${candidate.description}`));
     }
-
-    return help;
+    return lines.join("\n");
   }
 
-  // Next steps for a skill
   if (next) {
-    const skill = skills.find((s) => s.name.includes(next));
+    const skill = findSkill(skills, next);
     if (!skill) return `Skill '${next}' not found.`;
-
-    const phaseIdx = PHASE_ORDER.indexOf(skill.phase);
-    if (phaseIdx < 0 || phaseIdx >= PHASE_ORDER.length - 1) {
-      return `No next steps for '${skill.name}' (last phase).`;
-    }
-
-    const nextPhase = PHASE_ORDER[phaseIdx + 1];
-    const nextSkills = skills.filter((s) => s.phase === nextPhase);
-
-    let result = `After ${skill.name}, you can run:\n`;
-    for (const ns of nextSkills.slice(0, 5)) {
-      result += `  - ${ns.name}: ${ns.description}\n`;
-    }
-    return result;
+    const nextPhase = PHASE_ORDER[PHASE_ORDER.indexOf(skill.phase) + 1];
+    if (!nextPhase) return `No next steps for '${skill.name}'.`;
+    return [`After ${skill.name}, consider:`,
+      ...skills.filter((candidate) => candidate.phase === nextPhase).slice(0, 5)
+        .map((candidate) => `  - ${candidate.name}: ${candidate.description}`),
+    ].join("\n");
   }
 
-  // List by phase
-  let result = "## Codewright Skills\n\n";
-
-  for (const phase of PHASE_ORDER) {
-    const phaseSkills = skills.filter((s) => s.phase === phase);
-
-    if (phase && phaseSkills.length === 0) continue;
-
-    const phaseLabel = PHASE_DISPLAY[phase] || phase;
-
-    if (!phase) {
-      // Skills without phase
-      for (const s of phaseSkills) {
-        result += `  - ${s.name}: ${s.description}\n`;
-      }
-      continue;
-    }
-
-    result += `### ${phaseLabel}\n`;
-
-    const filtered = phase && phaseSkills.length > 0
-      ? phaseSkills
-      : skills.filter((s) => s.phase === phase);
-
-    for (const s of filtered) {
-      result += `  - ${s.name}: ${s.description}\n`;
-    }
-    result += "\n";
+  const phases = phaseFilter ? [phaseFilter.toLowerCase()] : PHASE_ORDER;
+  const lines = ["## Codewright Skills", ""];
+  for (const phaseName of phases) {
+    const phaseSkills = skills.filter((skill) => skill.phase === phaseName);
+    if (phaseSkills.length === 0) continue;
+    lines.push(`### ${PHASE_DISPLAY[phaseName] || phaseName}`);
+    lines.push(...phaseSkills.map((skill) => `  - ${skill.name}: ${skill.description}`), "");
   }
-
-  // Usage tips
-  result += `**Usage:**\n`;
-  result += `  codewright help <skill>      # Details and next steps\n`;
-  result += `  codewright help --next <skill> # What to do after this skill\n`;
-
-  return result;
+  lines.push("Usage:", "  codewright help <skill>", "  codewright help --next <skill>", "  codewright help --phase <phase>");
+  return lines.join("\n");
 }

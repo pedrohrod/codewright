@@ -1,6 +1,6 @@
 {
   "name": "codewright",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "AI-assisted specification, architecture, and implementation system — spec → architecture → stories → dev → review",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
@@ -32,21 +32,38 @@
     "agile",
     "verboo-code",
     "claude-code",
+    "codex",
+    "gemini-cli",
+    "github-copilot",
+    "opencode",
+    "windsurf",
+    "cline",
+    "cursor",
     "development-workflow"
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "commander": "^12.1.0",
+    "glob": "^10.4.5",
     "js-yaml": "^4.1.0",
-    "glob": "^10.4.5"
+    "smol-toml": "^1.7.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
+    "eslint": "^10.7.0",
     "tsup": "^8.2.4",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   },
   "files": [
     "dist",

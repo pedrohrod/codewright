@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Dev"
+  short_description: "Implement one ready story with TDD"
+  default_prompt: "Use $codewright-dev to implement this ready story with TDD."
+

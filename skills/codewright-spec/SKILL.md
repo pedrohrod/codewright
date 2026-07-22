@@ -1,45 +1,16 @@
 ---
-name: codewright:spec
-description: "Create or update specifications using memlog"
-phase: planning
+name: codewright-spec
+description: Create, refine, version, or synchronize a Codewright product specification and memlog. Use for "$codewright-spec", "codewright spec", legacy "codewright:spec", turn an idea into a spec, update requirements, inspect spec history, or compare a spec with implementation. Do not choose unresolved product intent silently.
 ---
 
-# Codewright Spec
+# Codewright Specification
 
-## Activation
-When the user says: "codewright spec", "create spec", "specification", "spec"
-
-## Operation
-<workflow>
-  <step n="1" goal="Understand the idea">
-    <action>Ask the user about the idea, problem to solve, and business context</action>
-    <action>Extract: system goal, expected capabilities, known constraints</action>
-  </step>
-  <step n="2" goal="Initialize memlog">
-    <action>Run `npx codewright spec <name>`</action>
-  </step>
-  <step n="3" goal="Populate memlog with entries">
-    <action>Add entries to memlog based on the conversation:
-      - (capability) CAP-1: capability description
-      - (constraint) non-negotiable rule
-      - (decision) architectural decision
-      - (question) open point
-    </action>
-  </step>
-  <step n="4" goal="Derive SPEC.md">
-    <action>Run `npx codewright spec <name> --update` to re-derive SPEC.md from memlog</action>
-  </step>
-  <step n="5" goal="Self-validation">
-    <action>Validate that SPEC.md contains:
-      - Why (business problem)
-      - Capabilities (at least 1)
-      - Constraints
-      - Non-goals
-      - Success signal
-    </action>
-    <action>If something is missing, ask the user</action>
-  </step>
-</workflow>
-
-## Finalization
-Spec created and validated. Ask if the user wants to generate architecture (`codewright:architecture`) or stories (`codewright:story`).
+1. Load applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, existing spec artifacts, project context, related source material, and spec customization.
+2. Establish the problem, audience, desired outcome, capabilities, constraints, non-goals, success signals, and unresolved questions.
+3. Run `npx codewright spec <slug>` for a new spec or `--update` after changing the memlog.
+4. Record atomic memlog entries as capabilities, constraints, decisions, questions, or notes with stable identifiers and sources.
+5. Make every capability observable and testable without prescribing implementation unless it is a genuine constraint.
+6. Preserve conflicting or unresolved input as explicit questions. Confirm decisions that materially change scope.
+7. Validate requirement uniqueness, traceability, non-goals, compatibility, and measurable completion.
+8. Use history, diff, snapshot, or sync operations only for the requested purpose; obtain confirmation before any Git commit.
+9. Report created or changed artifacts, decisions, open questions, and the next readiness step.

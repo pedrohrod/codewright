@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Quick Dev"
+  short_description: "Fix a small reproducible bug safely"
+  default_prompt: "Use $codewright-quick-dev to diagnose and fix this localized bug."
+
