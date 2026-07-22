@@ -28,9 +28,10 @@ When the user says: "codewright quick-dev", "quick fix", "hotfix", "bug fix", "r
     <action>Add test case for the bug scenario</action>
     <action>Verify existing tests still pass</action>
   </step>
-  <step n="5" goal="Prepare for review">
+  <step n="5" goal="Run review automatically">
     <action>Generate summary of what changed and why</action>
-    <action>Suggest running `codewright:review`</action>
+    <action>Run `codewright:review` automatically to review the changes</action>
+    <action>Report the review findings (High/Medium/Low) before proceeding</action>
   </step>
   <step n="6" goal="Commit changes (if auto_commit is enabled)">
     <action>Check if `auto_commit = true` in customization for codewright-quick-dev</action>
@@ -40,4 +41,4 @@ When the user says: "codewright quick-dev", "quick fix", "hotfix", "bug fix", "r
 </workflow>
 
 ## Finalization
-Fix implemented. User should run `codewright review <name> <id>` for formal review, then `codewright commit <name> <id>` to commit.
+Fix implemented and reviewed. User should run `codewright commit <name> <id>` to commit.

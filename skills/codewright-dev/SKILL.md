@@ -32,11 +32,16 @@ When the user says: "codewright dev", "implement story", "start story", "dev sta
     <action>Refactor code keeping tests green</action>
     <action>Improve names, extract functions, remove duplication</action>
   </step>
-  <step n="6" goal="Mark tasks complete">
+  <step n="6" goal="Run review automatically">
+    <action>Run `codewright:review` to review the implemented story</action>
+    <action>Report the review findings (High/Medium/Low)</action>
+    <action>If any High findings: fix before proceeding</action>
+  </step>
+  <step n="7" goal="Mark tasks complete">
     <action>Update the story file: mark tasks as completed</action>
     <action>Add entry to Change Log</action>
   </step>
-  <step n="7" goal="Commit changes (if auto_commit is enabled)">
+  <step n="8" goal="Commit changes (if auto_commit is enabled)">
     <action>Check if `auto_commit = true` in `.codewright/custom/codewright-dev.toml` [workflow] section</action>
     <action>If true: run `codewright:commit` to create a feature branch and commit all changes</action>
     <action>If false or unset: skip — commit is manual</action>
@@ -45,4 +50,4 @@ When the user says: "codewright dev", "implement story", "start story", "dev sta
 </workflow>
 
 ## Finalization
-Story implemented. Status remains "in-progress". User should run `codewright review <name> <id>` for review, then `codewright commit <name> <id>` to commit.
+Story implemented and reviewed. Status remains "in-progress". User should run `codewright commit <name> <id>` to commit.
