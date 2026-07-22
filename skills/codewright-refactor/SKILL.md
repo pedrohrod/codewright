@@ -6,7 +6,7 @@ description: Safely improve existing code structure while preserving observable 
 # Codewright Refactor
 
 1. Define the exact smell, desired improvement, behavioral boundary, and success measure.
-2. Read applicable guidance, callers, tests, types, quality findings, and refactor customization.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, callers, tests, types, quality findings, and refactor customization.
 3. Establish a passing safety net for current behavior. Add characterization tests when coverage is insufficient.
 4. Propose the smallest structural change and explain alternatives only when the trade-off is material.
 5. Apply one coherent transformation at a time and run focused tests after each step.

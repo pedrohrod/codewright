@@ -24,6 +24,8 @@ describe("bundled skill contracts", () => {
       expect(folder).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
       expect(String(frontmatter.description)).toContain(`$${folder}`);
       expect(String(frontmatter.description)).toContain("codewright:");
+      expect(content).toContain("AGENTS.md");
+      expect(content).toContain(".codewright/rules/*.md");
       expect(content).not.toContain("## Activation");
       expect(content).not.toContain("<workflow>");
     }

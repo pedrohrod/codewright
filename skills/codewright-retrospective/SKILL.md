@@ -5,7 +5,7 @@ description: Run a Codewright delivery retrospective using completed artifacts, 
 
 # Codewright Retrospective
 
-1. Gather the selected period's specs, story states, reviews, test results, incidents, and relevant Git history.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, then gather the selected period's specs, story states, reviews, test results, incidents, and relevant Git history.
 2. Separate observed facts, participant feedback, and inference.
 3. Ask for missing human context: what helped, what slowed delivery, surprises, and unresolved issues.
 4. Identify recurring system patterns rather than attributing blame.

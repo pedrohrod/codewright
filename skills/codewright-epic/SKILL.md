@@ -5,7 +5,7 @@ description: Decompose an approved Codewright specification or PRD into user-val
 
 # Codewright Epic
 
-1. Load the spec or supplied PRD, architecture, applicable guidance, and epic customization.
+1. Load the spec or supplied PRD, architecture, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, and epic customization.
 2. Extract numbered functional and non-functional requirements, constraints, non-goals, actors, and unresolved questions. Confirm material ambiguities.
 3. Group requirements into epics that each deliver an observable user or operator outcome.
 4. Create small, independently testable stories in dependency order with actor and value, Given/When/Then acceptance criteria, boundaries, and requirement IDs.

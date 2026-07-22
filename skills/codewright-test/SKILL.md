@@ -5,7 +5,7 @@ description: Design, implement, and verify tests for existing code or a Codewrig
 
 # Codewright Test
 
-1. Read applicable guidance, source behavior, public interfaces, callers, existing tests, story I/O Matrix, and test customization.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, source behavior, public interfaces, callers, existing tests, story I/O Matrix, and test customization.
 2. Choose the lowest test level that proves the behavior: unit for isolated logic, integration for boundaries, and end-to-end for critical journeys.
 3. Cover observable success, meaningful boundaries, errors, state transitions, and the regression being prevented.
 4. Follow the repository's framework, fixtures, naming, and setup patterns. Avoid mocks that only verify implementation details.

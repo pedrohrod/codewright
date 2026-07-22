@@ -6,7 +6,7 @@ description: Design, generate, run, and analyze Codewright performance tests wit
 # Codewright Performance Testing
 
 1. Confirm the target environment, owner approval, traffic budget, test type, duration, virtual users, data safety, and stop conditions.
-2. Read applicable guidance, performance customization, service contracts, authentication needs, and existing tests.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, performance customization, service contracts, authentication needs, and existing tests.
 3. Run `npx codewright perf setup <k6|artillery>` and replace sample URLs and checks with verified scenarios.
 4. Define thresholds from explicit SLOs. When none exist, label proposed thresholds as provisional rather than authoritative.
 5. Add realistic ramping, request checks, endpoint tags, test-data isolation, and environment-driven secrets.

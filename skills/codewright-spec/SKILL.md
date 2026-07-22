@@ -5,7 +5,7 @@ description: Create, refine, version, or synchronize a Codewright product specif
 
 # Codewright Specification
 
-1. Load applicable guidance, existing spec artifacts, project context, related source material, and spec customization.
+1. Load applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, existing spec artifacts, project context, related source material, and spec customization.
 2. Establish the problem, audience, desired outcome, capabilities, constraints, non-goals, success signals, and unresolved questions.
 3. Run `npx codewright spec <slug>` for a new spec or `--update` after changing the memlog.
 4. Record atomic memlog entries as capabilities, constraints, decisions, questions, or notes with stable identifiers and sources.

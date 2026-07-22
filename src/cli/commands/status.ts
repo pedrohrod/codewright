@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
+import { readAgentManifest } from "../../agents/install.js";
+import { getAgentDefinition } from "../../agents/registry.js";
 import { loadConfig } from "../../config/loader.js";
 
 export function statusCommand(cwd: string): string {
@@ -25,6 +27,11 @@ export function statusCommand(cwd: string): string {
     lines.push("**Skills:** not installed (run codewright init)");
     lines.push("");
   }
+
+  const agentManifest = readAgentManifest(cwd);
+  const agentLabels = agentManifest.targets.map((target) => getAgentDefinition(target).label);
+  lines.push("**Agents:** " + (agentLabels.length > 0 ? agentLabels.join(", ") : "universal core only"));
+  lines.push("");
 
   // 2. Specs
   const specsDir = resolve(cwd, config.output_folder, "specs");

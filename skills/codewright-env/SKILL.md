@@ -5,7 +5,7 @@ description: Safely inspect or initialize Codewright environment-variable files 
 
 # Codewright Environment
 
-1. Read applicable guidance, `.env.example`, `.gitignore`, and existing environment-related configuration.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, `.env.example`, `.gitignore`, and existing environment-related configuration.
 2. Use `npx codewright env list` to report variable names and set or unset state only.
 3. Use `npx codewright env setup` only when the user requests initialization. Preserve an existing `.env` and report missing names without values.
 4. Ensure `.env` and local override files are ignored by Git; keep placeholders and safe defaults in `.env.example`.

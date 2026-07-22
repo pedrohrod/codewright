@@ -6,7 +6,7 @@ description: Perform an evidence-based Codewright maintainability and code-quali
 # Codewright Quality
 
 1. Resolve the review scope from the user, story Code Map, or baseline diff; never silently review the entire repository.
-2. Read applicable guidance, tests, types, callers, and quality customization before judging the code.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, tests, types, callers, and quality customization before judging the code.
 3. Check duplication, cohesion, coupling, naming, control-flow complexity, error handling, dead code, and unnecessary abstraction.
 4. Report only evidence-backed findings with severity, `file:line`, impact, and the smallest reasonable remediation.
 5. Distinguish correctness or maintainability risk from optional style preferences. Avoid arbitrary time estimates.

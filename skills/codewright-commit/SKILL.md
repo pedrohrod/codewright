@@ -5,7 +5,7 @@ description: Prepare and create a story-scoped Codewright Git commit, optionally
 
 # Codewright Commit
 
-1. Load the story, Code Map, review artifact, applicable guidance, Git status, current branch, remotes, and commit customization.
+1. Load the story, Code Map, review artifact, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, Git status, current branch, remotes, and commit customization.
 2. Require a readiness/review state, passing required checks, no unresolved High findings, and an exact list of story-owned files.
 3. Run `npx codewright commit <spec> <id> --dry-run` and inspect the proposed branch, message, files, story-status update, and unrelated changes.
 4. Refuse to proceed when the Code Map is incomplete, unrelated changes are staged, the target branch already exists, or required checks failed.

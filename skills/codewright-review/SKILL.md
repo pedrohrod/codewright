@@ -5,7 +5,7 @@ description: Review a Codewright story implementation against its baseline diff,
 
 # Codewright Review
 
-1. Run `npx codewright review <spec> <id>` and load the full baseline diff, story, spec, tests, architecture, and applicable guidance.
+1. Run `npx codewright review <spec> <id>` and load the full baseline diff, story, spec, tests, architecture, and applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`.
 2. Review independently across correctness and regressions, edge cases and failure modes, and acceptance traceability.
 3. Check security-sensitive boundaries and dependency changes when present.
 4. Report only actionable findings with severity, `file:line`, triggering scenario, impact, and remediation direction.

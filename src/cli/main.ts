@@ -3,7 +3,15 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import {
+  formatAgentMenu,
+  getAgentDefinition,
+  parseAgentTargets,
+  parseInteractiveAgentSelection,
+  type AgentTarget,
+} from "../agents/registry.js";
 import { initCommand } from "./commands/init.js";
 import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffCommand, specVersionCommand, specSyncCommand } from "./commands/spec.js";
 import { storyCreateCommand, storyListCommand } from "./commands/story.js";
@@ -32,6 +40,20 @@ function getVersion(): string {
   }
 }
 
+async function selectAgentTargets(option?: string): Promise<AgentTarget[]> {
+  if (option !== undefined) return parseAgentTargets(option);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return [];
+
+  console.log(formatAgentMenu());
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await prompt.question("> ");
+    return parseInteractiveAgentSelection(answer);
+  } finally {
+    prompt.close();
+  }
+}
+
 const program = new Command();
 
 program
@@ -44,16 +66,30 @@ program
   .command("init")
   .description("Initialize codewright in the project")
   .option("--dir <path>", "Target directory", ".")
+  .option("--agents <targets>", "Comma-separated agents, 'all', or 'core'")
   .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
-  .action((opts) => {
-    const result = initCommand(process.cwd(), opts.dir, { upgradeSkills: opts.upgradeSkills });
-    console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
-    console.log(`  Output: ${result.outputDir}`);
-    console.log(`  Skills: .agents/skills/`);
-    const d = result.detected;
-    if (d.framework) console.log(`  Framework: ${d.framework}`);
-    if (d.test_runner) console.log(`  Test runner: ${d.test_runner}`);
-    if (d.project_language) console.log(`  Language: ${d.project_language}`);
+  .action(async (opts) => {
+    try {
+      const agents = await selectAgentTargets(opts.agents);
+      const result = initCommand(process.cwd(), opts.dir, {
+        upgradeSkills: opts.upgradeSkills,
+        agents,
+      });
+      console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
+      console.log(`  Output: ${result.outputDir}`);
+      console.log("  Skills: .agents/skills/ (universal core)");
+      const labels = result.agentTargets.map((target) => getAgentDefinition(target).label);
+      console.log(`  Agents: ${labels.length > 0 ? labels.join(", ") : "core only"}`);
+      if (result.adapterFiles.length > 0) console.log(`  Adapters: ${result.adapterFiles.length} files generated`);
+      for (const warning of result.warnings) console.warn(`  Warning: ${warning}`);
+      const d = result.detected;
+      if (d.framework) console.log(`  Framework: ${d.framework}`);
+      if (d.test_runner) console.log(`  Test runner: ${d.test_runner}`);
+      if (d.project_language) console.log(`  Language: ${d.project_language}`);
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    }
   });
 
 // ─── spec ───────────────────────────────────────────────
@@ -330,4 +366,4 @@ program
     console.log(result);
   });
 
-program.parse(process.argv);
+await program.parseAsync(process.argv);

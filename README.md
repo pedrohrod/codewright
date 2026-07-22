@@ -19,7 +19,7 @@ codewright orchestrates the full software development lifecycle through AI agent
 4. **Dev** — Implement with TDD (RED → GREEN → REFACTOR)
 5. **Review** — Parallel code review with specialized agents
 
-It works with **Verboo Code**, **Claude Code**, or any AI agent that loads skills from `.agents/skills/`.
+It supports **Codex, Claude Code, Gemini CLI, GitHub Copilot, OpenCode, Windsurf, Cline, and Cursor** from one canonical skill set.
 
 ## Installation
 
@@ -41,7 +41,17 @@ npx codewright init
 npx codewright init
 ```
 
-### Using with Claude Code / Verboo Code
+In an interactive terminal, choose one or more agents or select **all**. For automation:
+
+```bash
+npx codewright init --agents claude,cursor
+npx codewright init --agents all
+npx codewright init --agents core
+```
+
+Without an interactive terminal or `--agents`, Codewright installs the universal `.agents/skills` core only.
+
+### Using with AI agents
 
 After init, talk to the agent:
 
@@ -59,9 +69,20 @@ After init, talk to the agent:
 | `$codewright-testgen` | Scaffolds TODO tests from story scenarios |
 | `$codewright-perf` | Designs and analyzes approved performance tests |
 
-The skills are automatically loaded from `.agents/skills/`. No configuration needed.
+| Agent | Native invocation | Installation |
+|-------|-------------------|--------------|
+| Codex | `$codewright-spec` | Universal core |
+| Claude Code | `/codewright-spec` | `.claude/skills` adapter |
+| Gemini CLI | Natural request / automatic | Universal core |
+| GitHub Copilot | `/codewright-spec` or automatic | Universal core |
+| OpenCode | Automatic | Universal core |
+| Windsurf | `@codewright-spec` | Universal core |
+| Cline | Automatic | `.cline/skills` adapter |
+| Cursor | `/codewright-spec` | `.cursor/commands` adapter |
 
-Skills follow the Agent Skills naming standard and are invoked as `$codewright-*`. Legacy phrases such as `codewright:spec` remain recognized for compatibility.
+The adapters are small generated pointers. The workflow remains canonical in `.agents/skills`, so agent-specific copies cannot drift.
+
+Skills follow the Agent Skills naming standard. Explicit invocation syntax varies by agent as shown above; legacy phrases such as `codewright:spec` remain recognized by the skill descriptions.
 
 ### Or use the CLI directly
 
@@ -84,13 +105,17 @@ your-project/
 ├── AGENTS.md                  # Discoverable project guidance (created only if absent)
 ├── .codewright/
 │   ├── config.yaml          # Auto-detected stack & settings
+│   ├── agents.yaml          # Selected agent targets
 │   ├── config.user.yaml     # Your personal overrides (gitignored)
 │   └── custom/              # Per-skill customization
 ├── .agents/skills/          # 25 AI agent skills
 │   ├── codewright-spec/
 │   ├── codewright-story/
 │   ├── codewright-dev/
-│   └── ... (10 more)
+│   └── ... (22 more)
+├── .claude/skills/          # Optional generated Claude adapters
+├── .cline/skills/           # Optional generated Cline adapters
+├── .cursor/commands/        # Optional generated Cursor commands
 └── .codewright-output/      # Generated artifacts
     └── project-context.md   # Auto-generated project context
 ```
@@ -126,6 +151,8 @@ npx codewright review my-feature S001
 | Command | Description |
 |---------|-------------|
 | `codewright init` | Initialize project with skills and config |
+| `codewright init --agents <list>` | Initialize for selected agents (`all` or comma-separated) |
+| `codewright init --agents core` | Install only the universal Agent Skills core |
 | `codewright spec <slug>` | Create a new specification |
 | `codewright spec <slug> --update` | Re-derive SPEC.md from memlog |
 | `codewright spec <slug> --input <file>` | Seed spec from existing document |
@@ -185,7 +212,7 @@ npx codewright review my-feature S001
 
 ### How Skills Work
 
-Skills are `.agents/skills/<name>/SKILL.md` files that guide AI agents through workflows. When you say "codewright spec" to an agent, it loads the skill and follows the defined steps.
+Skills are `.agents/skills/<name>/SKILL.md` files following the open Agent Skills format. Agents with native `.agents/skills` support load them directly. Claude, Cline, and Cursor use generated adapters that point back to the same canonical files. When you request "codewright spec", the selected agent loads the workflow and its resources only when needed.
 
 ## Living Specs & Rules
 

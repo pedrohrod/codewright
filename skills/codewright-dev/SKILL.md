@@ -5,7 +5,7 @@ description: Implement one ready Codewright story with evidence-driven TDD and s
 
 # Codewright Dev
 
-1. Load the story, spec, architecture, applicable guidance, project context, customization, and current Git status.
+1. Load the story, spec, architecture, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, project context, customization, and current Git status.
 2. Run the readiness workflow. Stop on missing acceptance behavior, ambiguous boundaries, unresolved dependencies, or an incomplete Code Map.
 3. Run `npx codewright dev <spec> <id>` to record the baseline and mark the story in progress.
 4. Map every I/O Matrix row to a test. Add a failing test first and capture the expected failure.

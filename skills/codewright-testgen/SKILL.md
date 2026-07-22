@@ -5,7 +5,7 @@ description: Scaffold test cases from Codewright story I/O Matrix rows for later
 
 # Codewright Test Generator
 
-1. Load the selected stories, I/O Matrix rows, Code Map, applicable guidance, project test framework, and generation customization.
+1. Load the selected stories, I/O Matrix rows, Code Map, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, project test framework, and generation customization.
 2. Run `npx codewright test <spec> [story-id]`.
 3. Map each valid scenario to a clearly named test skeleton and retain source story/scenario traceability.
 4. Generate executable assertions only when imports, invocation, input, and expected output can be derived unambiguously.

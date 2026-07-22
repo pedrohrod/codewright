@@ -5,7 +5,7 @@ description: 'Orchestrate the complete Codewright workflow across multiple stori
 
 # Codewright Develop
 
-1. Load the spec, architecture, stories, dependencies, applicable guidance, project context, Git state, and orchestration customization.
+1. Load the spec, architecture, stories, dependencies, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, project context, Git state, and orchestration customization.
 2. Show stories by status and dependency order. Confirm the starting story when more than one path is valid.
 3. For each selected story:
    - Run readiness and stop or skip with a recorded reason on failure.

@@ -32,6 +32,13 @@
     "agile",
     "verboo-code",
     "claude-code",
+    "codex",
+    "gemini-cli",
+    "github-copilot",
+    "opencode",
+    "windsurf",
+    "cline",
+    "cursor",
     "development-workflow"
   ],
   "author": "",

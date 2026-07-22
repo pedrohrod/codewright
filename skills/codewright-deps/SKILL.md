@@ -5,7 +5,7 @@ description: Audit Codewright project dependencies for outdated versions and kno
 
 # Codewright Dependencies
 
-1. Read applicable guidance, manifests, lockfiles, workspace configuration, and the detected ecosystem.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, manifests, lockfiles, workspace configuration, and the detected ecosystem.
 2. Run `npx codewright deps` and distinguish outdated-package data, known vulnerabilities, unsupported runtimes, and unavailable audit tooling.
 3. Treat registry or network failures as unknown results, never as "all up to date."
 4. Rank findings by exploitability, production reachability, severity, available remediation, and breaking-change risk.

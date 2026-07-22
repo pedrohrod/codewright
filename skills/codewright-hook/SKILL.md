@@ -5,7 +5,7 @@ description: Inspect, install, or remove Codewright Git hooks while preserving e
 
 # Codewright Hooks
 
-1. Read applicable guidance, `.git/hooks`, `.codewright/hooks`, repository scripts, and hook customization.
+1. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, `.git/hooks`, `.codewright/hooks`, repository scripts, and hook customization.
 2. Run `npx codewright hook list` before changing anything.
 3. Preview the exact hooks, checks, blocking behavior, and existing-hook chaining.
 4. Install only after explicit approval. Back up existing hooks, chain them in a deterministic order, and propagate non-zero exit codes.

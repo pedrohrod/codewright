@@ -5,7 +5,7 @@ description: Generate or review secure Docker deployment configuration for Codew
 
 # Codewright Deploy
 
-1. Inspect applicable guidance, manifests, lockfiles, runtime declarations, build outputs, start commands, ports, and existing container files.
+1. Inspect applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, manifests, lockfiles, runtime declarations, build outputs, start commands, ports, and existing container files.
 2. Choose the repository-declared runtime version; use Codewright's maintained fallback only when the project declares none.
 3. Preview `npx codewright deploy dockerfile` and `npx codewright deploy dockerignore`. If targets exist, review them and require explicit overwrite approval.
 4. Generate deterministic dependency installation, separate build/runtime stages where useful, minimal runtime contents, a non-root user, and no embedded secrets.

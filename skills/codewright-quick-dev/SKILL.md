@@ -6,7 +6,7 @@ description: Diagnose and implement a small, well-bounded bug fix or hotfix with
 # Codewright Quick Development
 
 1. Capture expected behavior, actual behavior, reproduction steps, impact, and rollback constraints.
-2. Read applicable guidance, relevant code, tests, recent changes, and quick-development customization.
+2. Read applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, relevant code, tests, recent changes, and quick-development customization.
 3. Reproduce the bug or establish a failing regression test before editing. If reproduction is impossible, state the uncertainty.
 4. Make the smallest change that fixes the root cause and follows existing patterns.
 5. Add a regression test and run focused plus required repository checks.

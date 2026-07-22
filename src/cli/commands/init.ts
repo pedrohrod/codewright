@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, readFileSync
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../../config/loader.js";
+import { installAgentAdapters, readAgentManifest, writeAgentManifest } from "../../agents/install.js";
+import type { AgentTarget } from "../../agents/registry.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./context.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,7 +12,7 @@ const __dirname = dirname(__filename);
 // Skills directory inside the installed package
 const PACKAGE_SKILLS_DIR = resolve(__dirname, "../../skills");
 
-const SKILL_NAMES = [
+export const SKILL_NAMES = [
   "codewright-init",
   "codewright-spec",
   "codewright-architecture",
@@ -36,7 +38,12 @@ const SKILL_NAMES = [
   "codewright-env",
   "codewright-deploy",
   "codewright-perf",
-];
+] as const;
+
+export interface InitOptions {
+  upgradeSkills?: boolean;
+  agents?: AgentTarget[];
+}
 
 interface DetectedStack {
   framework?: string;
@@ -109,13 +116,19 @@ function detectProjectStack(targetDir: string): DetectedStack {
   return detected;
 }
 
-export function initCommand(cwd: string, dir?: string, options: { upgradeSkills?: boolean } = {}) {
+export function initCommand(cwd: string, dir?: string, options: InitOptions = {}) {
   const targetDir = dir ? resolve(cwd, dir) : cwd;
   const codewrightDir = resolve(targetDir, ".codewright");
   const outputDir = resolve(targetDir, ".codewright-output");
   const agentsSkillsDir = resolve(targetDir, ".agents", "skills");
   const customDir = resolve(codewrightDir, "custom");
   const rulesDir = resolve(codewrightDir, "rules");
+  const upgradeSkills = options.upgradeSkills === true;
+  const backupRoot = resolve(
+    codewrightDir,
+    "skill-backups",
+    new Date().toISOString().replace(/[:.]/g, "-"),
+  );
 
   // Create directories
   for (const d of [codewrightDir, outputDir, agentsSkillsDir, customDir, rulesDir]) {
@@ -203,13 +216,15 @@ This project uses Codewright for assisted development.
 
 ## Flow
 
-1. Idea → use \`$codewright-spec\`
-2. Spec ready → use \`$codewright-architecture\`
-3. Architecture ready → use \`$codewright-story\`
-4. Before implementing → use \`$codewright-readiness\`
-5. Story ready → use \`$codewright-dev\`
-6. Implemented → use \`$codewright-review\`
-7. Reviewed → use \`$codewright-commit\`
+Invocation syntax varies by agent (for example \`$name\`, \`/name\`, or \`@name\`). The canonical skill identifiers are:
+
+1. Idea → use \`codewright-spec\`
+2. Spec ready → use \`codewright-architecture\`
+3. Architecture ready → use \`codewright-story\`
+4. Before implementing → use \`codewright-readiness\`
+5. Story ready → use \`codewright-dev\`
+6. Implemented → use \`codewright-review\`
+7. Reviewed → use \`codewright-commit\`
 
 ## Rules
 
@@ -224,7 +239,19 @@ This project uses Codewright for assisted development.
   }
 
   // Install skills into .agents/skills/
-  installSkills(agentsSkillsDir, options.upgradeSkills === true);
+  installSkills(agentsSkillsDir, upgradeSkills, backupRoot);
+
+  // Persist target selection without silently removing adapters from earlier runs.
+  const previousManifest = readAgentManifest(targetDir);
+  const agentTargets = [...new Set([...previousManifest.targets, ...(options.agents || [])])];
+  const manifestPath = writeAgentManifest(targetDir, agentTargets);
+  const adapterResult = installAgentAdapters({
+    targetDir,
+    targets: agentTargets,
+    skillNames: SKILL_NAMES,
+    upgrade: upgradeSkills,
+    backupRoot,
+  });
 
   // Auto-generate project context
   const contextResult = contextGenerateCommand(targetDir);
@@ -236,19 +263,15 @@ This project uses Codewright for assisted development.
     agentsSkillsDir,
     contextFile: contextResult.path,
     llmsFile: llmsResult.path,
+    manifestPath,
+    agentTargets,
+    adapterFiles: adapterResult.installedFiles,
+    warnings: adapterResult.warnings,
     detected,
   };
 }
 
-function installSkills(agentsSkillsDir: string, upgrade: boolean) {
-  const backupRoot = resolve(
-    agentsSkillsDir,
-    "..",
-    "..",
-    ".codewright",
-    "skill-backups",
-    new Date().toISOString().replace(/[:.]/g, "-"),
-  );
+function installSkills(agentsSkillsDir: string, upgrade: boolean, backupRoot: string) {
   for (const skillName of SKILL_NAMES) {
     const srcSkillDir = resolve(PACKAGE_SKILLS_DIR, skillName);
     const srcSkillFile = resolve(srcSkillDir, "SKILL.md");

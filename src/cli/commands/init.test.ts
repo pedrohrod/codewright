@@ -3,6 +3,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { load } from "js-yaml";
 
 const CLI = join(process.cwd(), "dist/cli/main.mjs");
 
@@ -22,6 +23,52 @@ describe("CLI Integration", () => {
     const skills = readdirSync(join(tmpDir, ".agents", "skills"));
     expect(skills).toHaveLength(25);
     expect(existsSync(join(tmpDir, ".agents", "skills", "codewright-spec", "agents", "openai.yaml"))).toBe(true);
+    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { targets: string[] };
+    expect(manifest.targets).toEqual([]);
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("codewright init should install selected native agent adapters", () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "init-agents-test-"));
+    execSync("git init", { cwd: tmpDir });
+    const output = execSync(`node ${CLI} init --agents claude,cursor`, { cwd: tmpDir, encoding: "utf-8" });
+
+    expect(output).toContain("Claude Code, Cursor");
+    expect(output).toContain("50 files generated");
+    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(25);
+    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(25);
+    expect(existsSync(join(tmpDir, ".cline"))).toBe(false);
+
+    const claude = readFileSync(join(tmpDir, ".claude", "skills", "codewright-spec", "SKILL.md"), "utf-8");
+    const cursor = readFileSync(join(tmpDir, ".cursor", "commands", "codewright-spec.md"), "utf-8");
+    expect(claude).toContain("../../../.agents/skills/codewright-spec/SKILL.md");
+    expect(cursor).toContain("../../.agents/skills/codewright-spec/SKILL.md");
+    const status = execSync(`node ${CLI} status`, { cwd: tmpDir, encoding: "utf-8" });
+    expect(status).toContain("**Agents:** Claude Code, Cursor");
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("codewright init should reject an unknown agent before writing files", () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "init-invalid-agent-test-"));
+    execSync("git init", { cwd: tmpDir });
+    expect(() => execSync(`node ${CLI} init --agents unknown`, { cwd: tmpDir, stdio: "pipe" })).toThrow();
+    expect(existsSync(join(tmpDir, ".codewright"))).toBe(false);
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("codewright init --agents all should install every required adapter", () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "init-all-agents-test-"));
+    execSync("git init", { cwd: tmpDir });
+    const output = execSync(`node ${CLI} init --agents all`, { cwd: tmpDir, encoding: "utf-8" });
+    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { targets: string[] };
+
+    expect(output).toContain("75 files generated");
+    expect(manifest.targets).toHaveLength(8);
+    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(25);
+    expect(readdirSync(join(tmpDir, ".cline", "skills"))).toHaveLength(25);
+    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(25);
 
     rmSync(tmpDir, { recursive: true, force: true });
   });

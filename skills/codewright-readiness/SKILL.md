@@ -5,7 +5,7 @@ description: Determine whether a Codewright story is implementation-ready using 
 
 # Codewright Readiness
 
-1. Load the story, parent spec, architecture, companion stories, applicable guidance, project context, and readiness customization.
+1. Load the story, parent spec, architecture, companion stories, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, project context, and readiness customization.
 2. Validate unique ID, valid status, existing spec reference, clear problem and approach, explicit boundaries, and actionable tasks.
 3. Require testable I/O Matrix scenarios covering success, relevant boundaries, and failures; use the configured minimum only as a floor.
 4. Confirm every planned file is represented in the Code Map and every dependency exists in an acceptable state.

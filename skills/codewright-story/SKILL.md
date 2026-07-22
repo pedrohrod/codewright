@@ -5,7 +5,7 @@ description: Create or revise implementation-ready Codewright stories from an ap
 
 # Codewright Story
 
-1. Load the spec, architecture, existing stories, applicable guidance, source patterns, and story customization.
+1. Load the spec, architecture, existing stories, applicable root and nested `AGENTS.md` files, `.codewright/rules/*.md`, source patterns, and story customization.
 2. Select a capability-sized increment that produces a demonstrable outcome and has no dependency on unfinished future behavior.
 3. Run `npx codewright story <spec> <id> "<title>"` and complete the generated artifact.
 4. Define problem, approach, Always/Ask First/Never boundaries, dependencies, and requirement IDs.
