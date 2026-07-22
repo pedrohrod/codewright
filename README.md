@@ -57,6 +57,7 @@ After init, talk to the agent:
 | `codewright:commit` | Commit story to feature branch and merge to main |
 | `codewright:test` | Generates tests from I/O Matrix |
 | `codewright:document` | Generates JSDoc, README, API docs |
+| `codewright:perf` | Performance testing with k6 |
 
 The skills are automatically loaded from `.agents/skills/`. No configuration needed.
 
@@ -135,6 +136,7 @@ npx codewright review my-feature S001
 | `codewright dev <spec> <id>` | Start implementing a story |
 | `codewright review <spec> <id>` | Prepare code review |
 | `codewright commit <spec> <id>` | Commit story to feature branch and merge to main |
+| `codewright perf [setup\|run] [k6\|artillery]` | Performance testing with k6 |
 | `codewright context` | Regenerate project context |
 
 ## Skills
@@ -163,6 +165,7 @@ npx codewright review my-feature S001
 | `codewright:quick-dev` | Rapid bug fixes and hotfixes |
 | `codewright:document` | Generate JSDoc, README, API docs |
 | `codewright:retrospective` | Sprint review and lessons learned |
+| `codewright:perf` | Performance testing with k6 — setup, run, analyze |
 | `codewright:rules` | Manage project rules (add, list, review) |
 | `codewright:init` | Project setup and initialization |
 

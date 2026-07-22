@@ -1,0 +1,21 @@
+[defaults]
+target_url = "http://localhost:3000"
+tool = "k6"
+
+[stages.k6]
+ramp_up_duration = "30s"
+ramp_up_target = 10
+steady_duration = "1m"
+steady_target = 10
+ramp_down_duration = "30s"
+
+[thresholds]
+p95_max_ms = 500
+max_error_rate = 0.01
+
+[stages.artillery]
+warmup_duration = 60
+warmup_arrival_rate = 5
+warmup_ramp_to = 20
+sustained_duration = 120
+sustained_arrival_rate = 20
