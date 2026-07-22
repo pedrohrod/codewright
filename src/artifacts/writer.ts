@@ -1,5 +1,5 @@
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
 export interface WriteOptions {
   cwd: string;

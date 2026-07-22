@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Develop"
+  short_description: "Orchestrate full story development"
+  default_prompt: "Use $codewright-develop to implement the ready stories in this specification."
+

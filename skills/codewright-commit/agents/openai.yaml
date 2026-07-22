@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Commit"
+  short_description: "Create a safe story-scoped commit"
+  default_prompt: "Use $codewright-commit to prepare a scoped commit for this reviewed story."
+

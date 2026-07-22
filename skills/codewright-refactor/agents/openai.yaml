@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Refactor"
+  short_description: "Improve structure without behavior drift"
+  default_prompt: "Use $codewright-refactor to improve this code while preserving behavior."
+

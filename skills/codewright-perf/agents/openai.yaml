@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Performance"
+  short_description: "Design and analyze performance tests"
+  default_prompt: "Use $codewright-perf to design an approved performance test for this service."
+

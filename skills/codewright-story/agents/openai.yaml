@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Story"
+  short_description: "Create implementation-ready stories"
+  default_prompt: "Use $codewright-story to create a ready story from this specification."
+

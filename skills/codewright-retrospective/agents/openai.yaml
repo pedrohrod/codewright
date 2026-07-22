@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Retrospective"
+  short_description: "Turn delivery evidence into actions"
+  default_prompt: "Use $codewright-retrospective to run an evidence-based delivery retrospective."
+

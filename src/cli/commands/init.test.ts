@@ -14,13 +14,14 @@ describe("CLI Integration", () => {
 
     expect(output).toContain("Codewright initialized");
     expect(existsSync(join(tmpDir, ".codewright", "config.yaml"))).toBe(true);
-    expect(existsSync(join(tmpDir, ".codewright", "AGENTS.md"))).toBe(true);
+    expect(existsSync(join(tmpDir, "AGENTS.md"))).toBe(true);
     expect(existsSync(join(tmpDir, ".agents", "skills"))).toBe(true);
     expect(existsSync(join(tmpDir, ".codewright-output", "project-context.md"))).toBe(true);
 
     // Check skills are installed
     const skills = readdirSync(join(tmpDir, ".agents", "skills"));
-    expect(skills.length).toBeGreaterThan(20);
+    expect(skills).toHaveLength(25);
+    expect(existsSync(join(tmpDir, ".agents", "skills", "codewright-spec", "agents", "openai.yaml"))).toBe(true);
 
     rmSync(tmpDir, { recursive: true, force: true });
   });

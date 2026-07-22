@@ -1,33 +1,14 @@
 ---
-name: codewright:deploy
-description: "Generate deployment configuration — Dockerfile, .dockerignore"
-phase: operations
+name: codewright-deploy
+description: Generate or review secure Docker deployment configuration for Codewright-supported Node.js, Python, or Go projects. Use for "$codewright-deploy", "codewright deploy", legacy "codewright:deploy", containerize this project, Dockerfile generation, or dockerignore setup. Do not deploy, publish images, or overwrite existing configuration without approval.
 ---
 
 # Codewright Deploy
 
-## Activation
-When the user says: "codewright deploy", "generate dockerfile", "docker setup", "deployment config", "containerize"
-
-## Operation
-<workflow>
-  <step n="1" goal="Generate Dockerfile">
-    <action>Run: `npx codewright deploy dockerfile`</action>
-    <action>Generates a multi-stage Dockerfile based on project stack:
-      - **Node.js**: node:20-alpine, build + production stages
-      - **Python**: python:3.12-alpine
-      - **Go**: golang:1.22-alpine + scratch (minimal image)
-    </action>
-  </step>
-  <step n="2" goal="Generate .dockerignore">
-    <action>Run: `npx codewright deploy dockerignore`</action>
-    <action>Creates .dockerignore excluding node_modules, dist, .git, etc.</action>
-  </step>
-  <step n="3" goal="Build and test">
-    <action>Suggest running: `docker build -t <project> .`</action>
-    <action>Suggest running: `docker run -p 3000:3000 <project>`</action>
-  </step>
-</workflow>
-
-## Finalization
-Deployment configuration generated. Remind the user to test the Docker build locally.
+1. Inspect applicable guidance, manifests, lockfiles, runtime declarations, build outputs, start commands, ports, and existing container files.
+2. Choose the repository-declared runtime version; use Codewright's maintained fallback only when the project declares none.
+3. Preview `npx codewright deploy dockerfile` and `npx codewright deploy dockerignore`. If targets exist, review them and require explicit overwrite approval.
+4. Generate deterministic dependency installation, separate build/runtime stages where useful, minimal runtime contents, a non-root user, and no embedded secrets.
+5. Add a health check only when the repository exposes a verified health endpoint or command.
+6. Build the image locally when Docker is available and run the project's safe smoke check. Do not publish it.
+7. Report image assumptions, exposed ports, verification results, and remaining production concerns. Read [references/docker.md](references/docker.md) for the baseline.

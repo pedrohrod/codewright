@@ -1,32 +1,14 @@
 ---
-name: codewright:deps
-description: "Check project dependencies — find outdated or vulnerable packages"
-phase: operations
+name: codewright-deps
+description: Audit Codewright project dependencies for outdated versions and known vulnerabilities across Node.js, Python, or Go. Use for "$codewright-deps", "codewright deps", legacy "codewright:deps", dependency health, vulnerable packages, or update planning. Do not upgrade packages automatically.
 ---
 
-# Codewright Deps
+# Codewright Dependencies
 
-## Activation
-When the user says: "codewright deps", "check dependencies", "outdated packages", "update deps", "dependency check"
-
-## Operation
-<workflow>
-  <step n="1" goal="Check dependencies">
-    <action>Run: `npx codewright deps`</action>
-    <action>Shows:
-      - Total dependency count (production + dev)
-      - Outdated packages with current and latest versions
-      - Summary of all dependencies
-    </action>
-  </step>
-  <step n="2" goal="Update outdated packages">
-    <action>If outdated packages found, suggest running `npm update` or `npm install <pkg>@latest`</action>
-    <action>For major version updates, suggest checking changelog first</action>
-  </step>
-  <step n="3" goal="Keep dependencies healthy">
-    <action>Suggest running `codewright deps` regularly to keep dependencies current</action>
-  </step>
-</workflow>
-
-## Finalization
-Dependency check complete. Report outdated packages and update recommendations.
+1. Read applicable guidance, manifests, lockfiles, workspace configuration, and the detected ecosystem.
+2. Run `npx codewright deps` and distinguish outdated-package data, known vulnerabilities, unsupported runtimes, and unavailable audit tooling.
+3. Treat registry or network failures as unknown results, never as "all up to date."
+4. Rank findings by exploitability, production reachability, severity, available remediation, and breaking-change risk.
+5. For each proposed upgrade, inspect release notes and migration guidance before recommending a version.
+6. Never run an install, lockfile rewrite, or forced audit fix without explicit approval.
+7. Report exact commands run, ecosystem coverage, unresolved uncertainty, and a staged remediation plan. Read [references/supply-chain.md](references/supply-chain.md) for the security baseline.

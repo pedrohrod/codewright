@@ -10,7 +10,7 @@ import { storyCreateCommand, storyListCommand } from "./commands/story.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { commitCommand } from "./commands/commit.js";
-import { hookInstallCommand, hookListCommand } from "./commands/hook.js";
+import { hookInstallCommand, hookListCommand, hookUninstallCommand } from "./commands/hook.js";
 import { ciGenerateCommand } from "./commands/ci.js";
 import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
@@ -44,8 +44,9 @@ program
   .command("init")
   .description("Initialize codewright in the project")
   .option("--dir <path>", "Target directory", ".")
+  .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
   .action((opts) => {
-    const result = initCommand(process.cwd(), opts.dir);
+    const result = initCommand(process.cwd(), opts.dir, { upgradeSkills: opts.upgradeSkills });
     console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
     console.log(`  Output: ${result.outputDir}`);
     console.log(`  Skills: .agents/skills/`);
@@ -65,6 +66,7 @@ program
   .option("--history", "View spec version history")
   .option("--diff [from] [to]", "Diff between spec versions")
   .option("--snapshot", "Create a new version snapshot")
+  .option("--yes", "Confirm snapshot commits in non-interactive use")
   .option("--sync", "Sync spec with code (compare requirements vs implementation)")
   .action((slug: string, opts) => {
     if (!slug) {
@@ -87,6 +89,10 @@ program
       const result = specDiffCommand(process.cwd(), slug, from);
       console.log(result);
     } else if (opts.snapshot) {
+      if (!opts.yes) {
+        console.log("Snapshot would create a Git commit. Rerun with --snapshot --yes to confirm.");
+        return;
+      }
       const result = specVersionCommand(process.cwd(), slug);
       console.log(result);
     } else if (opts.sync) {
@@ -156,16 +162,28 @@ program
 // ─── commit ─────────────────────────────────────────────
 program
   .command("commit")
-  .description("Commit story changes to a feature branch and push")
+  .description("Preview or create a story-scoped commit")
   .argument("<spec>", "Spec slug")
   .argument("<id>", "Story ID")
   .option("--branch <name>", "Custom branch name")
   .option("--amend", "Amend to last commit instead of new commit")
+  .option("--push", "Push the branch to origin after committing")
+  .option("--yes", "Confirm the local commit in non-interactive use")
+  .option("--dry-run", "Show the branch and files without committing")
   .action((spec: string, id: string, opts) => {
+    const previewOnly = opts.dryRun || !opts.yes;
     const result = commitCommand(process.cwd(), spec, id, {
       branch: opts.branch,
       amend: opts.amend,
+      push: opts.push,
+      dryRun: previewOnly,
     });
+    if (previewOnly && result.filesChanged > 0) {
+      console.log(`Commit preview for ${result.branch}:`);
+      for (const file of result.plannedFiles) console.log(`  - ${file}`);
+      if (!opts.dryRun) console.log("Rerun with --yes to create the local commit; add --push to push it.");
+      return;
+    }
     if (result.commitHash) {
       console.log(`✓ Story committed to branch ${result.branch}`);
       console.log(`  Commit: ${result.commitHash}`);
@@ -200,11 +218,13 @@ program
 program
   .command("hook")
   .description("Manage git hooks for the project")
-  .argument("[action]", "Action: install or list", "list")
+  .argument("[action]", "Action: install, uninstall, or list", "list")
   .action((action: string) => {
     if (action === "install") {
       const result = hookInstallCommand(process.cwd());
       console.log(result);
+    } else if (action === "uninstall") {
+      console.log(hookUninstallCommand(process.cwd()));
     } else {
       const result = hookListCommand(process.cwd());
       console.log(result);
@@ -215,8 +235,9 @@ program
 program
   .command("ci")
   .description("Generate CI workflow for the project")
-  .action(() => {
-    const result = ciGenerateCommand(process.cwd());
+  .option("--force", "Replace an existing generated workflow after review")
+  .action((opts) => {
+    const result = ciGenerateCommand(process.cwd(), { force: opts.force });
     console.log(result);
   });
 

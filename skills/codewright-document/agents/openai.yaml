@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Document"
+  short_description: "Write verified project documentation"
+  default_prompt: "Use $codewright-document to document this code from verified behavior."
+

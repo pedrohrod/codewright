@@ -1,43 +1,14 @@
 ---
-name: codewright:retrospective
-description: "Post-implementation review — lessons learned, improvements for next cycle"
-phase: retrospective
+name: codewright-retrospective
+description: Run a Codewright delivery retrospective using completed artifacts, Git evidence, test results, and participant input. Use for "$codewright-retrospective", "codewright retrospective", legacy "codewright:retrospective", sprint retro, post-implementation review, or lessons learned. Do not invent team sentiment or blame individuals.
 ---
 
 # Codewright Retrospective
 
-## Activation
-When the user says: "codewright retrospective", "retro", "sprint review", "post-mortem", "lessons learned"
-
-## Operation
-<workflow>
-  <step n="1" goal="Gather sprint data">
-    <action>List all stories for the current spec with their statuses</action>
-    <action>Count: completed, in-progress, not started</action>
-    <action>If git is available, check commit history for the sprint period</action>
-  </step>
-  <step n="2" goal="Ask the user">
-    <action>Ask structured questions:
-      - What went well this sprint?
-      - What could be improved?
-      - What was unexpected or blocked us?
-      - Are there any unresolved issues?
-    </action>
-  </step>
-  <step n="3" goal="Analyze patterns">
-    <action>Look for recurring themes:
-      - Specs that were incomplete → caused rework
-      - Missing I/O Matrix scenarios → late bug discovery
-      - Stories too large → estimation issues
-      - Good test coverage → fewer regressions
-    </action>
-  </step>
-  <step n="4" goal="Generate improvement suggestions">
-    <action>For each pattern found, suggest a concrete change</action>
-    <action>Prioritize: High impact, Low effort first</action>
-    <action>Update the project's checklist/templates if applicable</action>
-  </step>
-</workflow>
-
-## Finalization
-Retrospective complete. Document key takeaways and action items. Suggest running `codewright:spec` for any improvement initiatives.
+1. Gather the selected period's specs, story states, reviews, test results, incidents, and relevant Git history.
+2. Separate observed facts, participant feedback, and inference.
+3. Ask for missing human context: what helped, what slowed delivery, surprises, and unresolved issues.
+4. Identify recurring system patterns rather than attributing blame.
+5. Create a small set of actions with owner, expected outcome, due signal, and follow-up date.
+6. Update templates or rules only when the user authorizes the durable process change.
+7. Report delivery outcomes, evidence, lessons, actions, and unresolved questions.

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Dependencies"
+  short_description: "Audit dependency health and risk"
+  default_prompt: "Use $codewright-deps to audit this project's dependencies."
+

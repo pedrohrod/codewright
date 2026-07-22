@@ -1,44 +1,15 @@
 ---
-name: codewright:story
-description: "Create implementation stories from a SPEC"
-phase: preparation
+name: codewright-story
+description: Create or revise implementation-ready Codewright stories from an approved specification and architecture. Use for "$codewright-story", "codewright story", legacy "codewright:story", create a story, break a capability into tasks, or list stories for a spec. Do not create stories without traceability to user or operator value.
 ---
 
 # Codewright Story
 
-## Activation
-When the user says: "codewright story", "create story", "story", "break into tasks"
-
-## Operation
-<workflow>
-  <step n="1" goal="Load the SPEC">
-    <action>Read the SPEC.md from the selected spec</action>
-    <action>List all capabilities</action>
-  </step>
-  <step n="2" goal="Break capabilities into stories">
-    <action>For each capability, identify 1-N stories</action>
-    <action>Breakdown criteria:
-      - Each story delivers incremental value
-      - Story has testable scope
-      - Dependencies between stories are clear
-    </action>
-  </step>
-  <step n="3" goal="Create each story">
-    <action>For each story, run:
-      `npx codewright story <name> <id> "<title>"`
-    </action>
-    <action>Manually fill in the generated file:
-      - I/O Matrix with scenarios and edge cases
-      - Code Map (files to create/modify/delete)
-      - Tasks and subtasks
-      - Boundaries & Constraints
-    </action>
-  </step>
-  <step n="4" goal="Define dependencies">
-    <action>Identify which story depends on which</action>
-    <action>Document in the `companions` field of SPEC.md</action>
-  </step>
-</workflow>
-
-## Finalization
-Stories created. Use `npx codewright story <name>` to view all stories.
+1. Load the spec, architecture, existing stories, applicable guidance, source patterns, and story customization.
+2. Select a capability-sized increment that produces a demonstrable outcome and has no dependency on unfinished future behavior.
+3. Run `npx codewright story <spec> <id> "<title>"` and complete the generated artifact.
+4. Define problem, approach, Always/Ask First/Never boundaries, dependencies, and requirement IDs.
+5. Add I/O Matrix rows for success, boundaries, invalid input, dependency failure, and relevant state transitions.
+6. Build a Code Map from repository inspection; label files CREATE, MODIFY, or DELETE and avoid speculative files.
+7. Write ordered, verifiable tasks that map to I/O scenarios and Code Map entries.
+8. Run readiness and revise until blockers are explicit. Report traceability, dependencies, and remaining questions.

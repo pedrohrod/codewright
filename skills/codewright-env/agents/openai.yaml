@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Environment"
+  short_description: "Configure environment variables safely"
+  default_prompt: "Use $codewright-env to validate this project's environment setup safely."
+

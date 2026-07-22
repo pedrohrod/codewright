@@ -109,7 +109,7 @@ function detectProjectStack(targetDir: string): DetectedStack {
   return detected;
 }
 
-export function initCommand(cwd: string, dir?: string) {
+export function initCommand(cwd: string, dir?: string, options: { upgradeSkills?: boolean } = {}) {
   const targetDir = dir ? resolve(cwd, dir) : cwd;
   const codewrightDir = resolve(targetDir, ".codewright");
   const outputDir = resolve(targetDir, ".codewright-output");
@@ -161,7 +161,7 @@ Add your project-specific rules here. These rules are loaded by codewright skill
   // Create config.yaml with detected values
   const configPath = resolve(codewrightDir, "config.yaml");
   if (!existsSync(configPath)) {
-    const config = loadConfig(cwd);
+    const config = loadConfig(targetDir);
     const framework = detected.framework ? `\nframework: "${detected.framework}"` : "";
     const testRunner = detected.test_runner ? `\ntest_runner: "${detected.test_runner}"` : "";
     const lintTools = detected.lint_tools.length > 0
@@ -194,8 +194,8 @@ context_file: ".codewright-output/project-context.md"${framework}${testRunner}${
     writeFileSync(userConfigPath, userYaml, "utf-8");
   }
 
-  // Create AGENTS.md
-  const agentsPath = resolve(codewrightDir, "AGENTS.md");
+  // Create discoverable root AGENTS.md only when the project has none.
+  const agentsPath = resolve(targetDir, "AGENTS.md");
   if (!existsSync(agentsPath)) {
     const agents = `# Codewright Agent Instructions
 
@@ -203,16 +203,13 @@ This project uses Codewright for assisted development.
 
 ## Flow
 
-1. Idea → run \`codewright:spec\`
-2. Spec ready → run \`codewright:architecture\`
-3. Architecture ready → run \`codewright:story\`
-4. Before implementing → run \`codewright:readiness\`
-5. During implementation → run \`codewright:quality\`, \`codewright:test\`, \`codewright:refactor\`
-6. For bug fixes → run \`codewright:quick-dev\`
-7. Story ready → run \`codewright:dev\`
-8. Implemented → run \`codewright:review\`
-9. After sprint → run \`codewright:retrospective\`
-10. Documentation needed → run \`codewright:document\`
+1. Idea → use \`$codewright-spec\`
+2. Spec ready → use \`$codewright-architecture\`
+3. Architecture ready → use \`$codewright-story\`
+4. Before implementing → use \`$codewright-readiness\`
+5. Story ready → use \`$codewright-dev\`
+6. Implemented → use \`$codewright-review\`
+7. Reviewed → use \`$codewright-commit\`
 
 ## Rules
 
@@ -220,16 +217,18 @@ This project uses Codewright for assisted development.
 - Every story has an I/O Matrix with edge cases
 - Tasks are only complete with passing tests
 - Never implement outside the task scope
+- Load all applicable files in \`.codewright/rules/\` before Codewright work
+- Never expose environment-variable values or push without explicit approval
 `;
     writeFileSync(agentsPath, agents, "utf-8");
   }
 
   // Install skills into .agents/skills/
-  installSkills(agentsSkillsDir);
+  installSkills(agentsSkillsDir, options.upgradeSkills === true);
 
   // Auto-generate project context
-  const contextResult = contextGenerateCommand(cwd);
-  const llmsResult = contextLlmsCommand(cwd);
+  const contextResult = contextGenerateCommand(targetDir);
+  const llmsResult = contextLlmsCommand(targetDir);
 
   return {
     codewrightDir,
@@ -241,13 +240,27 @@ This project uses Codewright for assisted development.
   };
 }
 
-function installSkills(agentsSkillsDir: string) {
+function installSkills(agentsSkillsDir: string, upgrade: boolean) {
+  const backupRoot = resolve(
+    agentsSkillsDir,
+    "..",
+    "..",
+    ".codewright",
+    "skill-backups",
+    new Date().toISOString().replace(/[:.]/g, "-"),
+  );
   for (const skillName of SKILL_NAMES) {
     const srcSkillDir = resolve(PACKAGE_SKILLS_DIR, skillName);
     const srcSkillFile = resolve(srcSkillDir, "SKILL.md");
     const destSkillDir = resolve(agentsSkillsDir, skillName);
 
     if (!existsSync(srcSkillFile)) continue;
+    if (existsSync(destSkillDir) && !upgrade) continue;
+    if (existsSync(destSkillDir) && upgrade) {
+      const backupDir = resolve(backupRoot, skillName);
+      mkdirSync(backupDir, { recursive: true });
+      cpSync(destSkillDir, backupDir, { recursive: true, force: true });
+    }
     if (!existsSync(destSkillDir)) mkdirSync(destSkillDir, { recursive: true });
 
     const entries = readdirSync(srcSkillDir);

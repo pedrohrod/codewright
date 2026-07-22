@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Deploy"
+  short_description: "Generate secure Docker configuration"
+  default_prompt: "Use $codewright-deploy to create secure Docker configuration for this project."
+

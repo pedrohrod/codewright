@@ -1,12 +1,14 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { loadConfig, resolveSpecDir } from "../../config/loader.js";
 import { writeArtifact } from "../../artifacts/writer.js";
 
 export interface CommitOptions {
   branch?: string;
   amend?: boolean;
+  push?: boolean;
+  dryRun?: boolean;
 }
 
 export interface CommitResult {
@@ -15,56 +17,43 @@ export interface CommitResult {
   filesChanged: number;
   storyUpdated: boolean;
   pushed: boolean;
+  plannedFiles: string[];
+}
+
+function git(cwd: string, args: string[]): string {
+  return execFileSync("git", args, { cwd, encoding: "utf-8" }).trim();
 }
 
 function storySlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function parseStoryFrontmatter(content: string): Record<string, string> {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const fields: Record<string, string> = {};
-  for (const line of match[1].split("\n")) {
-    const sep = line.indexOf(":");
-    if (sep > 0) {
-      fields[line.slice(0, sep).trim()] = line.slice(sep + 1).trim();
-    }
-  }
-  return fields;
+function parseCodeMap(content: string): string[] {
+  const section = content.match(/## Code Map\s*\n([\s\S]*?)(?=\n## |\s*$)/)?.[1] || "";
+  return section.split("\n").map((line) => line.match(/^\s*-\s+(.+?)\s+\((?:CREATE|MODIFY|DELETE)\)\s*$/)?.[1])
+    .filter((value): value is string => Boolean(value));
 }
 
-function updateStoryStatus(content: string, commitHash: string, branch: string): string {
-  // Update status to done
-  let updated = content.replace(/^status:\s*pending/m, "status: done");
-  updated = updated.replace(/^status:\s*in-progress/m, "status: done");
-  updated = updated.replace(/^status:\s*review/m, "status: done");
+function changedFiles(cwd: string): string[] {
+  const output = git(cwd, ["status", "--porcelain", "--untracked-files=all"]);
+  return output ? output.split("\n").map((line) => line.slice(3).replace(/^.* -> /, "")) : [];
+}
 
-  // Add Change Log entry
-  const now = new Date().toISOString().split("T")[0];
-  const entry = `\n- ${now}: Committed as ${commitHash} on branch \`${branch}\``;
-
+function updateStoryStatus(content: string, branch: string): string {
+  let updated = content.replace(/^status:\s*(?:pending|in-progress|review).*$/m, "status: done");
+  const date = new Date().toISOString().split("T")[0];
+  const entry = `- ${date}: Committed as part of branch \`${branch}\``;
   if (updated.includes("## Change Log")) {
-    updated = updated.replace("## Change Log", `## Change Log${entry}`);
+    updated = updated.replace("## Change Log", `## Change Log\n${entry}`);
   } else {
-    updated += `\n## Change Log${entry}\n`;
+    updated += `\n## Change Log\n${entry}\n`;
   }
-
   return updated;
 }
 
-export function commitCommand(
-  cwd: string,
-  spec: string,
-  storyId: string,
-  options: CommitOptions = {}
-): CommitResult {
-  // Verify git repo first
+export function commitCommand(cwd: string, spec: string, storyId: string, options: CommitOptions = {}): CommitResult {
   try {
-    execSync("git rev-parse --git-dir", { cwd, encoding: "utf-8" });
+    git(cwd, ["rev-parse", "--git-dir"]);
   } catch {
     throw new Error("Not a git repository");
   }
@@ -72,114 +61,79 @@ export function commitCommand(
   const config = loadConfig(cwd);
   const specDir = resolveSpecDir(cwd, config, spec);
   const storiesDir = resolve(specDir, "stories");
+  if (!existsSync(storiesDir)) throw new Error(`No stories directory found for spec '${spec}'`);
 
-  if (!existsSync(storiesDir)) {
-    throw new Error(`No stories directory found for spec '${spec}'`);
-  }
-
-  const files = readdirSync(storiesDir).filter((f) => f.startsWith(storyId));
-  if (files.length === 0) {
-    throw new Error(`Story '${storyId}' not found in spec '${spec}'`);
-  }
+  const files = readdirSync(storiesDir).filter((file) => file.startsWith(storyId));
+  if (files.length === 0) throw new Error(`Story '${storyId}' not found in spec '${spec}'`);
 
   const storyFile = files[0];
   const storyPath = resolve(storiesDir, storyFile);
   const content = readFileSync(storyPath, "utf-8");
-  const frontmatter = parseStoryFrontmatter(content);
-  const title = frontmatter.id === storyId
-    ? (content.match(/^#\s+(.+)/m)?.[1]?.trim() || storyId)
-    : storyId;
+  const title = content.match(/^#\s+(.+)/m)?.[1]?.trim() || storyId;
+  const branch = options.branch || `story/${storyId}-${storySlug(title)}`;
 
-  const slug = storySlug(title);
-  const branchName = options.branch || `story/${storyId}-${slug}`;
-
-  // Check if branch already exists
-  const branchExists = (() => {
-    try {
-      execSync(`git rev-parse --verify "${branchName}"`, {
-        cwd,
-        encoding: "utf-8",
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  })();
-
-  if (branchExists) {
-    throw new Error(`Branch '${branchName}' already exists`);
-  }
-
-  // Stage all changes
-  execSync("git add -A", { cwd, encoding: "utf-8" });
-
-  // Check if there's anything to commit
-  const hasChanges = (() => {
-    try {
-      execSync("git diff --cached --quiet", { cwd });
-      return false;
-    } catch {
-      return true;
-    }
-  })();
-
-  if (!hasChanges) {
-    return {
-      branch: branchName,
-      commitHash: null,
-      filesChanged: 0,
-      storyUpdated: false,
-      pushed: false,
-    };
-  }
-
-  // Count files changed
-  const diffStat = execSync("git diff --cached --numstat", {
-    cwd,
-    encoding: "utf-8",
-  });
-  const filesChanged = diffStat.trim() ? diffStat.trim().split("\n").length : 0;
-
-  // Create branch and switch to it
-  execSync(`git checkout -b "${branchName}"`, { cwd, encoding: "utf-8" });
-
-  // Commit
-  const commitMsg = `feat(${slug}): ${title} (#${storyId})`;
-  let commitHash: string;
-  if (options.amend) {
-    execSync(`git commit --amend -m "${commitMsg}"`, { cwd, encoding: "utf-8" });
-  } else {
-    execSync(`git commit -m "${commitMsg}"`, { cwd, encoding: "utf-8" });
-  }
-  commitHash = execSync("git rev-parse --short HEAD", {
-    cwd,
-    encoding: "utf-8",
-  }).trim();
-
-  // Push branch to remote
-  let pushed = false;
   try {
-    execSync(`git push -u origin "${branchName}"`, { cwd, encoding: "utf-8" });
-    pushed = true;
-  } catch {
-    // No remote or push failed — not a fatal error
+    git(cwd, ["rev-parse", "--verify", branch]);
+    throw new Error(`Branch '${branch}' already exists`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("already exists")) throw error;
   }
 
-  // Update story status
-  const updatedContent = updateStoryStatus(content, commitHash, branchName);
+  const status = content.match(/^status:\s*([^\s#]+)/m)?.[1];
+  if (status !== "in-progress" && status !== "review") {
+    throw new Error(`Story status must be in-progress or review before commit (found ${status || "missing"})`);
+  }
+
+  const storyRelative = relative(cwd, storyPath);
+  const reviewRelative = relative(cwd, resolve(specDir, "reviews", `review-${storyId}.md`));
+  const codeMap = parseCodeMap(content);
+  if (codeMap.length === 0) throw new Error("Story Code Map is empty or invalid");
+
+  const allowed = new Set([...codeMap, storyRelative]);
+  if (existsSync(resolve(cwd, reviewRelative))) allowed.add(reviewRelative);
+
+  const staged = git(cwd, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
+  const unrelatedStaged = staged.filter((file) => !allowed.has(file));
+  if (unrelatedStaged.length > 0) {
+    throw new Error(`Unrelated staged changes detected: ${unrelatedStaged.join(", ")}`);
+  }
+
+  const plannedFiles = changedFiles(cwd).filter((file) => allowed.has(file));
+  const implementationFiles = plannedFiles.filter((file) => file !== storyRelative && file !== reviewRelative);
+  if (implementationFiles.length === 0) {
+    return { branch, commitHash: null, filesChanged: 0, storyUpdated: false, pushed: false, plannedFiles: [] };
+  }
+  if (options.dryRun) {
+    const previewFiles = [...new Set([...plannedFiles, storyRelative])];
+    return { branch, commitHash: null, filesChanged: previewFiles.length, storyUpdated: false, pushed: false, plannedFiles: previewFiles };
+  }
+
   writeArtifact({
     cwd,
     outputFolder: config.output_folder,
     subpath: `specs/spec-${spec}/stories`,
     filename: storyFile,
-    content: updatedContent,
+    content: updateStoryStatus(content, branch),
   });
 
+  const filesToStage = changedFiles(cwd).filter((file) => allowed.has(file));
+  git(cwd, ["add", "--", ...filesToStage]);
+  git(cwd, ["checkout", "-b", branch]);
+
+  const message = `feat(${storySlug(title)}): ${title} (#${storyId})`;
+  git(cwd, options.amend ? ["commit", "--amend", "-m", message] : ["commit", "-m", message]);
+  let pushed = false;
+  if (options.push) {
+    git(cwd, ["push", "-u", "origin", branch]);
+    pushed = true;
+  }
+
   return {
-    branch: branchName,
-    commitHash,
-    filesChanged,
+    branch,
+    commitHash: git(cwd, ["rev-parse", "--short", "HEAD"]),
+    filesChanged: filesToStage.length,
     storyUpdated: true,
     pushed,
+    plannedFiles: filesToStage,
   };
 }

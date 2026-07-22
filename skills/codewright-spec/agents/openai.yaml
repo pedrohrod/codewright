@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Specification"
+  short_description: "Create traceable product specifications"
+  default_prompt: "Use $codewright-spec to turn this idea into a traceable specification."
+

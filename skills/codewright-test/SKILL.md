@@ -1,45 +1,15 @@
 ---
-name: codewright:test
-description: "Generate test strategy and implementation — unit, integration, fixtures"
-phase: implementation
+name: codewright-test
+description: Design, implement, and verify tests for existing code or a Codewright story using the project's actual framework. Use for "$codewright-test", "codewright test workflow", legacy "codewright:test", write tests, improve test coverage, integration tests, or regression tests. Do not use merely to scaffold tests from story matrices; use codewright-testgen for that.
 ---
 
 # Codewright Test
 
-## Activation
-When the user says: "codewright test", "write tests", "test strategy", "generate tests", "add test coverage"
-
-## Operation
-<workflow>
-  <step n="1" goal="Understand the code under test">
-    <action>Read the source file(s) the user wants to test</action>
-    <action>Identify: public API, input/output types, edge cases, dependencies to mock</action>
-  </step>
-  <step n="2" goal="Design test strategy">
-    <action>Determine appropriate test level:
-      - **Unit tests**: Pure functions, isolated logic, small scope
-      - **Integration tests**: Database, API calls, file I/O
-      - **Fixture factories**: Reusable test data builders
-    </action>
-    <action>List test scenarios:
-      - Happy path (success)
-      - Input variations (boundaries, empty, null, invalid)
-      - Error states (exceptions, failure codes)
-      - State transitions (if applicable)
-    </action>
-  </step>
-  <step n="3" goal="Generate test code">
-    <action>Write tests following the project's existing test patterns</action>
-    <action>Use the project's test framework (vitest, jest, mocha, playwright)</action>
-    <action>Cover: all I/O Matrix scenarios + edge cases</action>
-    <action>Include setup/teardown and mock configuration</action>
-  </step>
-  <step n="4" goal="Verify tests">
-    <action>Run the generated tests</action>
-    <action>If tests fail, diagnose and fix</action>
-    <action>Check for flaky tests (non-deterministic behavior)</action>
-  </step>
-</workflow>
-
-## Finalization
-Tests created and verified. Report coverage achieved and any scenarios that could not be tested.
+1. Read applicable guidance, source behavior, public interfaces, callers, existing tests, story I/O Matrix, and test customization.
+2. Choose the lowest test level that proves the behavior: unit for isolated logic, integration for boundaries, and end-to-end for critical journeys.
+3. Cover observable success, meaningful boundaries, errors, state transitions, and the regression being prevented.
+4. Follow the repository's framework, fixtures, naming, and setup patterns. Avoid mocks that only verify implementation details.
+5. Make each test deterministic, isolated, and capable of failing for the intended reason.
+6. Run focused tests first, then required broader checks. Diagnose failures rather than weakening assertions.
+7. Measure coverage only as supporting evidence; do not treat a percentage as proof of behavioral completeness.
+8. Report scenarios covered, commands, results, limitations, and remaining risks.

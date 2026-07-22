@@ -47,19 +47,21 @@ After init, talk to the agent:
 
 | You say | The agent does |
 |---------|---------------|
-| `codewright:spec` | Creates a specification from your idea |
-| `codewright:architecture` | Generates architecture decisions |
-| `codewright:epic` | Breaks spec into epics and stories |
-| `codewright:story` | Creates stories with I/O Matrix |
-| `codewright:develop` | **Orchestrates full workflow**: readiness → dev → quality → test → review → commit |
-| `codewright:quality` | Analyzes code (SOLID, DRY, naming) |
-| `codewright:review` | Parallel code review (3 reviewers) |
-| `codewright:commit` | Commit story to feature branch and merge to main |
-| `codewright:test` | Generates tests from I/O Matrix |
-| `codewright:document` | Generates JSDoc, README, API docs |
-| `codewright:perf` | Performance testing with k6 |
+| `$codewright-spec` | Creates a specification from your idea |
+| `$codewright-architecture` | Generates architecture decisions |
+| `$codewright-epic` | Breaks spec into epics and stories |
+| `$codewright-story` | Creates stories with I/O Matrix |
+| `$codewright-develop` | Orchestrates readiness → dev → quality → test → review |
+| `$codewright-quality` | Analyzes maintainability with evidence |
+| `$codewright-review` | Reviews a story against its contract |
+| `$codewright-commit` | Previews and creates a scoped local commit |
+| `$codewright-test` | Designs and implements meaningful tests |
+| `$codewright-testgen` | Scaffolds TODO tests from story scenarios |
+| `$codewright-perf` | Designs and analyzes approved performance tests |
 
 The skills are automatically loaded from `.agents/skills/`. No configuration needed.
+
+Skills follow the Agent Skills naming standard and are invoked as `$codewright-*`. Legacy phrases such as `codewright:spec` remain recognized for compatibility.
 
 ### Or use the CLI directly
 
@@ -79,10 +81,10 @@ Running `npx codewright init` creates:
 
 ```
 your-project/
+├── AGENTS.md                  # Discoverable project guidance (created only if absent)
 ├── .codewright/
 │   ├── config.yaml          # Auto-detected stack & settings
 │   ├── config.user.yaml     # Your personal overrides (gitignored)
-│   ├── AGENTS.md            # Rules for AI agents
 │   └── custom/              # Per-skill customization
 ├── .agents/skills/          # 25 AI agent skills
 │   ├── codewright-spec/
@@ -135,7 +137,8 @@ npx codewright review my-feature S001
 | `codewright story <spec> <id> "<title>"` | Create a story |
 | `codewright dev <spec> <id>` | Start implementing a story |
 | `codewright review <spec> <id>` | Prepare code review |
-| `codewright commit <spec> <id>` | Commit story to feature branch and merge to main |
+| `codewright commit <spec> <id> --dry-run` | Preview a story-scoped commit |
+| `codewright commit <spec> <id> --yes [--push]` | Create a local commit; push only when requested |
 | `codewright perf [setup\|run] [k6\|artillery]` | Performance testing with k6 |
 | `codewright context` | Regenerate project context |
 
@@ -146,28 +149,39 @@ npx codewright review my-feature S001
 ### Core Workflow
 | Skill | Description |
 |-------|-------------|
-| `codewright:spec` | Create specifications from ideas |
-| `codewright:architecture` | Design architecture decisions |
-| `codewright:epic` | Break spec into epics and stories (faster spec-to-implementation) |
-| `codewright:story` | Break capabilities into stories |
-| `codewright:develop` | **Orchestrate full workflow** — readiness → dev → quality → test → review → commit |
-| `codewright:dev` | Implement a single story (TDD) |
-| `codewright:review` | Parallel code review (3 reviewers) |
-| `codewright:commit` | Commit story to feature branch and merge to main |
-| `codewright:readiness` | Check if story is ready to implement |
+| `$codewright-spec` | Create traceable specifications from ideas |
+| `$codewright-architecture` | Design architecture decisions |
+| `$codewright-epic` | Break specs into value-oriented epics and stories |
+| `$codewright-story` | Create implementation-ready stories |
+| `$codewright-develop` | Orchestrate gated multi-story development |
+| `$codewright-dev` | Implement a single story with TDD |
+| `$codewright-review` | Review a story against its baseline and contract |
+| `$codewright-commit` | Create a safe story-scoped commit |
+| `$codewright-readiness` | Check if a story is ready to implement |
 
 ### Development Support
 | Skill | Description |
 |-------|-------------|
-| `codewright:quality` | Analyze code quality (SOLID, DRY, naming) |
-| `codewright:test` | Generate tests (unit, integration, fixtures) |
-| `codewright:refactor` | Apply design patterns (Strategy, Factory, etc.) |
-| `codewright:quick-dev` | Rapid bug fixes and hotfixes |
-| `codewright:document` | Generate JSDoc, README, API docs |
-| `codewright:retrospective` | Sprint review and lessons learned |
-| `codewright:perf` | Performance testing with k6 — setup, run, analyze |
-| `codewright:rules` | Manage project rules (add, list, review) |
-| `codewright:init` | Project setup and initialization |
+| `$codewright-quality` | Analyze maintainability with evidence |
+| `$codewright-test` | Design and implement meaningful tests |
+| `$codewright-testgen` | Scaffold TODO tests from I/O Matrix rows |
+| `$codewright-refactor` | Improve structure while preserving behavior |
+| `$codewright-quick-dev` | Fix small reproducible bugs |
+| `$codewright-document` | Generate verified code and API documentation |
+| `$codewright-retrospective` | Turn delivery evidence into actions |
+| `$codewright-perf` | Design, run, and analyze approved load tests |
+| `$codewright-rules` | Manage scoped project rules |
+| `$codewright-init` | Safely initialize or upgrade Codewright |
+
+### Operations
+| Skill | Description |
+|-------|-------------|
+| `$codewright-context` | Refresh safe AI-readable project context |
+| `$codewright-ci` | Generate and harden GitHub Actions CI |
+| `$codewright-deps` | Audit dependency freshness and vulnerabilities |
+| `$codewright-env` | Validate environment setup without revealing values |
+| `$codewright-deploy` | Generate secure Docker configuration |
+| `$codewright-hook` | Install, inspect, or remove Git hooks safely |
 
 ### How Skills Work
 

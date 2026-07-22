@@ -1,53 +1,16 @@
 ---
-name: codewright:dev
-description: "Implement a story following TDD"
-phase: implementation
+name: codewright-dev
+description: Implement one ready Codewright story with evidence-driven TDD and scope control. Use for "$codewright-dev", "codewright dev", legacy "codewright:dev", implement this story, start story development, or continue an in-progress story. Do not use for unscoped feature work or automatic pushing.
 ---
 
 # Codewright Dev
 
-## Activation
-When the user says: "codewright dev", "implement story", "start story", "dev start"
-
-## Operation
-<workflow>
-  <step n="1" goal="Load the story">
-    <action>Read the story file (`.codewright-output/specs/spec-<name>/stories/<id>-<title>.md`)</action>
-    <action>Confirm understanding: Intent, I/O Matrix, Code Map, Tasks</action>
-  </step>
-  <step n="2" goal="Start the story">
-    <action>Run: `npx codewright dev <name> <id>`</action>
-    <action>This marks the story as in-progress and records the baseline_commit</action>
-  </step>
-  <step n="3" goal="Implement RED phase">
-    <action>Write tests first (unit + edge cases from I/O Matrix)</action>
-    <action>Verify tests fail (RED)</action>
-  </step>
-  <step n="4" goal="Implement GREEN phase">
-    <action>Write minimum code to pass tests</action>
-    <action>Only implement what is in the Code Map</action>
-    <action>Verify tests pass (GREEN)</action>
-  </step>
-  <step n="5" goal="REFACTOR phase">
-    <action>Refactor code keeping tests green</action>
-    <action>Improve names, extract functions, remove duplication</action>
-  </step>
-  <step n="6" goal="Run review automatically">
-    <action>Run `codewright:review` to review the implemented story</action>
-    <action>Report the review findings (High/Medium/Low)</action>
-    <action>If any High findings: fix before proceeding</action>
-  </step>
-  <step n="7" goal="Mark tasks complete">
-    <action>Update the story file: mark tasks as completed</action>
-    <action>Add entry to Change Log</action>
-  </step>
-  <step n="8" goal="Commit changes (if auto_commit is enabled)">
-    <action>Check if `auto_commit = true` in `.codewright/custom/codewright-dev.toml` [workflow] section</action>
-    <action>If true: run `codewright:commit` to create a feature branch and commit all changes</action>
-    <action>If false or unset: skip — commit is manual</action>
-    <action>Default config at `skills/codewright-dev/customize.toml` has `auto_commit = false`</action>
-  </step>
-</workflow>
-
-## Finalization
-Story implemented and reviewed. Status remains "in-progress". User should run `codewright commit <name> <id>` to commit.
+1. Load the story, spec, architecture, applicable guidance, project context, customization, and current Git status.
+2. Run the readiness workflow. Stop on missing acceptance behavior, ambiguous boundaries, unresolved dependencies, or an incomplete Code Map.
+3. Run `npx codewright dev <spec> <id>` to record the baseline and mark the story in progress.
+4. Map every I/O Matrix row to a test. Add a failing test first and capture the expected failure.
+5. Implement the smallest change inside the Code Map that makes the test pass. Follow repository patterns and avoid unrelated cleanup.
+6. Refactor only with tests green, then run the repository's required focused and full checks.
+7. Review the baseline diff for correctness, security, regressions, error handling, and story acceptance. Resolve High findings.
+8. Update task checkboxes, Code Map drift, status to `review`, and the changelog with verified evidence.
+9. Do not commit or push unless the user separately authorizes the commit workflow.

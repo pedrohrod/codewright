@@ -1,38 +1,14 @@
 ---
-name: codewright:review
-description: "Review implementation with parallel subagents"
-phase: review
+name: codewright-review
+description: Review a Codewright story implementation against its baseline diff, acceptance criteria, tests, and project rules. Use for "$codewright-review", "codewright review", legacy "codewright:review", review this story, review a baseline diff, or assess merge readiness. Do not modify code unless the user asks to address findings.
 ---
 
 # Codewright Review
 
-## Activation
-When the user says: "codewright review", "review", "code review", "review story"
-
-## Operation
-<workflow>
-  <step n="1" goal="Prepare review">
-    <action>Run: `npx codewright review <name> <id>`</action>
-    <action>Generates diff from baseline_commit to HEAD and creates review file</action>
-  </step>
-  <step n="2" goal="Run parallel review (3 subagents)">
-    <action>Spawn 3 reviewers in parallel:</action>
-    <action>**Blind Hunter**: finds bugs, race conditions, null pointers, regressions</action>
-    <action>**Edge Case Hunter**: verifies I/O Matrix covers all edge cases</action>
-    <action>**Acceptance Auditor**: validates implementation meets story intent</action>
-  </step>
-  <step n="3" goal="Triage findings">
-    <action>Classify each finding as:
-      - **High**: blocks merge, must fix
-      - **Medium**: should be fixed
-      - **Low**: suggestion
-    </action>
-  </step>
-  <step n="4" goal="Generate follow-up tasks">
-    <action>Create tasks for each High/Medium finding</action>
-    <action>Update the review file with results</action>
-  </step>
-</workflow>
-
-## Finalization
-Review complete. If no High items exist, story can be marked as "done" (update YAML frontmatter).
+1. Run `npx codewright review <spec> <id>` and load the full baseline diff, story, spec, tests, architecture, and applicable guidance.
+2. Review independently across correctness and regressions, edge cases and failure modes, and acceptance traceability.
+3. Check security-sensitive boundaries and dependency changes when present.
+4. Report only actionable findings with severity, `file:line`, triggering scenario, impact, and remediation direction.
+5. Use High for merge-blocking correctness, security, data-loss, or acceptance failures; Medium for credible non-blocking risk; Low for optional improvement.
+6. Do not report pre-existing issues outside the diff unless the change makes them materially worse.
+7. Update the review artifact with findings and evidence. Mark review-ready only when required checks pass and no High finding remains.

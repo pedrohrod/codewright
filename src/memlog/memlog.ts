@@ -93,7 +93,7 @@ function append(workspace: string, entry: MemlogEntry) {
   const existing = existsSync(fp) ? readFileSync(fp, "utf-8") : "";
 
   let frontmatter: Record<string, string> = {};
-  let body = "";
+  let body: string;
 
   if (existing.startsWith("---")) {
     const parsed = frontmatterFromString(existing);

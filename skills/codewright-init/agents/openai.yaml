@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Init"
+  short_description: "Initialize or upgrade Codewright safely"
+  default_prompt: "Use $codewright-init to initialize or upgrade Codewright in this project."
+

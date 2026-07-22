@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Test"
+  short_description: "Design and implement meaningful tests"
+  default_prompt: "Use $codewright-test to design and implement tests for this behavior."
+

@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadConfig } from "../../config/loader.js";
 import { writeArtifact } from "../../artifacts/writer.js";
@@ -107,7 +107,7 @@ export function contextGenerateCommand(cwd: string) {
   }
 
   // 5. Critical Rules (from AGENTS.md)
-  const agentsPath = resolve(cwd, ".codewright", "AGENTS.md");
+  const agentsPath = resolve(cwd, "AGENTS.md");
   if (existsSync(agentsPath)) {
     const rules = readFileSync(agentsPath, "utf-8");
     sections.push(`## Critical Rules\n${rules}`);
@@ -205,4 +205,3 @@ export function contextLlmsCommand(cwd: string) {
 
   return { path: llmsPath };
 }
-

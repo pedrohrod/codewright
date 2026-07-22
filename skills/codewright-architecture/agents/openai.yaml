@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Architecture"
+  short_description: "Design architecture and decision records"
+  default_prompt: "Use $codewright-architecture to design the architecture for this approved specification."
+

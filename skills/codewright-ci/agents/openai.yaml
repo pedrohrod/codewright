@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright CI"
+  short_description: "Generate and harden CI workflows"
+  default_prompt: "Use $codewright-ci to generate a secure CI workflow for this project."
+

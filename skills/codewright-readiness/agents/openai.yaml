@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Readiness"
+  short_description: "Check whether a story is ready"
+  default_prompt: "Use $codewright-readiness to determine whether this story is implementation-ready."
+

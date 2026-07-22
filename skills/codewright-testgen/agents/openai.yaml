@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codewright Test Generator"
+  short_description: "Scaffold tests from story scenarios"
+  default_prompt: "Use $codewright-testgen to scaffold tests from this story's I/O Matrix."
+
