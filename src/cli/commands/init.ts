@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig, getCurrentVersion } from "../../config/loader.js";
@@ -7,16 +8,30 @@ import {
   installManagedRootRules,
   readAgentManifest,
   writeAgentManifest,
+  upsertGraphifyBlock,
+  getAgentInstructionPath,
 } from "../../agents/install.js";
 import type { AgentTarget } from "../../agents/registry.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./context.js";
 import { isPathGitignored } from "../../utils/gitignore.js";
+import type { GraphifyMode } from "../../config/graphify.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Skills directory inside the installed package
-const PACKAGE_SKILLS_DIR = resolve(__dirname, "../../skills");
+// Resolve skills directory - works both in source (src/cli/commands) and bundled (dist/cli)
+function getPackageSkillsDir(): string {
+  // When bundled: __dirname is dist/cli, skills at ../../skills
+  // When source: __dirname is src/cli/commands, skills at ../../../skills
+  const bundledPath = resolve(__dirname, "../../skills");
+  const sourcePath = resolve(__dirname, "../../../skills");
+  // Use the one that exists
+  if (existsSync(bundledPath)) return bundledPath;
+  if (existsSync(sourcePath)) return sourcePath;
+  // Fallback to bundled path
+  return bundledPath;
+}
+const PACKAGE_SKILLS_DIR = getPackageSkillsDir();
 
 export const SKILL_NAMES = [
   "codewright-init",
@@ -44,12 +59,15 @@ export const SKILL_NAMES = [
   "codewright-env",
   "codewright-deploy",
   "codewright-perf",
+  "codewright-graphify",
 ] as const;
 
 export interface InitOptions {
   upgradeSkills?: boolean;
   agents?: AgentTarget[];
   dryRun?: boolean;
+  withGraphify?: boolean;
+  graphifyMode?: GraphifyMode;
 }
 
 export interface DryRunAction {
@@ -63,6 +81,8 @@ export interface DryRunResult {
   skills: string[];
   agentAdapters: string[];
   detected: DetectedStack;
+  graphify?: GraphifyDetection;
+  graphifyMode?: GraphifyMode;
 }
 
 interface DetectedStack {
@@ -71,6 +91,56 @@ interface DetectedStack {
   lint_tools: string[];
   project_language?: string;
   strict_mode?: boolean;
+}
+
+interface GraphifyDetection {
+  available: boolean;
+  graphExists: boolean;
+  scriptsDetected: boolean;
+  configExists: boolean;
+}
+
+/**
+ * Detect Graphify availability and state for the project.
+ * Checks: command availability, graph existence, package.json scripts, existing config.
+ */
+function detectGraphify(targetDir: string): GraphifyDetection {
+  let available = false;
+  try {
+    // Check if graphify command is available (synchronous check via PATH)
+    execSync("graphify --version", { timeout: 5000, stdio: "pipe" });
+    available = true;
+  } catch {
+    available = false;
+  }
+
+  // Check if graph exists at default path
+  const graphExists = existsSync(resolve(targetDir, "graphify-out", "graph.json"));
+
+  // Check for graphify scripts in package.json
+  let scriptsDetected = false;
+  const pkgPath = resolve(targetDir, "package.json");
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      const scripts = pkg.scripts || {};
+      scriptsDetected = Object.keys(scripts).some(
+        (k) => k.includes("graphify") || String(scripts[k]).includes("graphify"),
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  // Check if graphify config already exists in config.yaml
+  const configPath = resolve(targetDir, ".codewright", "config.yaml");
+  let configExists = false;
+  if (existsSync(configPath)) {
+    const content = readFileSync(configPath, "utf-8");
+    configExists = content.includes("graphify:");
+  }
+
+  return { available, graphExists, scriptsDetected, configExists };
 }
 
 // Staging entry for atomic operations
@@ -305,6 +375,23 @@ function formatDryRunResult(result: DryRunResult): string {
     lines.push("");
   }
 
+  // Graphify info
+  if (result.graphifyMode && result.graphifyMode !== "off") {
+    lines.push("Graphify integration:");
+    if (result.graphify) {
+      lines.push(`  Command available: ${result.graphify.available ? "yes" : "no"}`);
+      lines.push(`  Graph exists: ${result.graphify.graphExists ? "yes" : "no"}`);
+      lines.push(`  Scripts detected: ${result.graphify.scriptsDetected ? "yes" : "no"}`);
+      if (!result.graphify.available) {
+        lines.push(`  Warning: Graphify command not found. Install with: npm install -g graphify`);
+      }
+    }
+    lines.push(`  Mode: ${result.graphifyMode}`);
+    lines.push(`  Config: will be added to config.yaml`);
+    lines.push(`  Agent block: will be added to AGENTS.md and native agent files`);
+    lines.push("");
+  }
+
   const d = result.detected;
   const stackInfo: string[] = [];
   if (d.framework) stackInfo.push(`Framework: ${d.framework}`);
@@ -418,7 +505,18 @@ export function initCommand(cwd: string, dir?: string, options: InitOptions = {}
 
   // Read previous manifest to determine agent targets
   const previousManifest = readAgentManifest(targetDir);
-  const agentTargets = [...new Set([...previousManifest.targets, ...(options.agents || [])])];
+  const previousTargets = previousManifest.agents
+    ? (Object.keys(previousManifest.agents) as AgentTarget[])
+    : [];
+  const agentTargets = [...new Set([...previousTargets, ...(options.agents || [])])];
+
+  // ─── Graphify detection ──────────────────────────────────
+  const graphifyDetection = detectGraphify(targetDir);
+  const withGraphify = options.withGraphify === true;
+  const graphifyMode: GraphifyMode = options.graphifyMode || (withGraphify ? "advisory" : previousManifest.graphify?.mode || "advisory");
+
+  // If --with-graphify or --graphify-mode is set, enable graphify integration
+  const enableGraphify = withGraphify || (options.graphifyMode !== undefined && options.graphifyMode !== "off");
 
   // ─── Dry-run mode ──────────────────────────────────────
   if (dryRun) {
@@ -440,6 +538,8 @@ export function initCommand(cwd: string, dir?: string, options: InitOptions = {}
       skills: skillNamesToInstall,
       agentAdapters: adapterLabels,
       detected,
+      graphify: graphifyDetection,
+      graphifyMode: enableGraphify ? graphifyMode : undefined,
     };
 
     console.log(formatDryRunResult(result));
@@ -456,6 +556,8 @@ export function initCommand(cwd: string, dir?: string, options: InitOptions = {}
       warnings: [],
       detected,
       dryRun: result,
+      graphifyEnabled: enableGraphify,
+      graphifyMode: enableGraphify ? graphifyMode : undefined,
     };
   }
 
@@ -516,11 +618,10 @@ Add your project-specific rules here. These rules are loaded by codewright skill
       writeFileSync(stagingPath, rules, "utf-8");
     }
 
-    // 6. Create config.yaml with detected values
+    // 6. Create config.yaml with detected values (including Graphify config)
     const configPath = resolve(codewrightDir, "config.yaml");
     if (!existsSync(configPath)) {
       const stagingPath = createStagingEntry(configPath, stagingDir, targetDir, upgradeSkills, stagingEntries);
-      const config = loadConfig(targetDir);
       const framework = detected.framework ? `\nframework: "${detected.framework}"` : "";
       const testRunner = detected.test_runner ? `\ntest_runner: "${detected.test_runner}"` : "";
       const lintTools = detected.lint_tools.length > 0
@@ -529,12 +630,24 @@ Add your project-specific rules here. These rules are loaded by codewright skill
       const lang = detected.project_language ? `\nproject_language: "${detected.project_language}"` : "";
       const strict = detected.strict_mode !== undefined ? `\nstrict_mode: ${detected.strict_mode}` : "";
 
+      // Graphify config section
+      const graphifySection = enableGraphify
+        ? `
+graphify:
+  enabled: true
+  mode: "${graphifyMode}"
+  command: "graphify"
+  graph_path: "graphify-out/graph.json"
+  query_budget: 4000
+  update_policy: "stale"`
+        : "";
+
       const yaml = `codewright_version: "${getCurrentVersion()}"
 project_name: "${resolve(targetDir).split("/").pop() || "my-project"}"
 stack: "${detected.framework || "node"}"
 communication_language: "en"
 output_folder: ".codewright-output"
-context_file: ".codewright-output/project-context.md"${framework}${testRunner}${lintTools}${lang}${strict}
+context_file: ".codewright-output/project-context.md"${framework}${testRunner}${lintTools}${lang}${strict}${graphifySection}
 `;
       mkdirSync(dirname(stagingPath), { recursive: true });
       writeFileSync(stagingPath, yaml, "utf-8");
@@ -589,6 +702,39 @@ Invocation syntax varies by agent (for example \`$name\`, \`/name\`, or \`@name\
       agentsTemplate,
     });
 
+    // 8b. Add Graphify managed block to AGENTS.md and native agent files
+    if (enableGraphify) {
+      const agentsPath = resolve(targetDir, "AGENTS.md");
+      if (existsSync(agentsPath)) {
+        const content = readFileSync(agentsPath, "utf-8");
+        const updated = upsertGraphifyBlock(content);
+        if (content !== updated) {
+          const stagingPath = createStagingEntry(agentsPath, stagingDir, targetDir, upgradeSkills, stagingEntries);
+          mkdirSync(dirname(stagingPath), { recursive: true });
+          writeFileSync(stagingPath, updated, "utf-8");
+        }
+      }
+
+      // Add Graphify block to native agent instruction files
+      for (const target of agentTargets) {
+        const nativePath = getAgentInstructionPath(target, targetDir);
+        if (!nativePath) continue;
+
+        let content = "";
+        if (existsSync(nativePath)) {
+          content = readFileSync(nativePath, "utf-8");
+        }
+
+        // Check if Graphify block already exists
+        if (!content.includes("<!-- codewright-managed:graphify:start -->")) {
+          const graphifyBlock = upsertGraphifyBlock(content || "");
+          const stagingPath = createStagingEntry(nativePath, stagingDir, targetDir, upgradeSkills, stagingEntries);
+          mkdirSync(dirname(stagingPath), { recursive: true });
+          writeFileSync(stagingPath, graphifyBlock, "utf-8");
+        }
+      }
+    }
+
     // 9. Install skills - copy to staging first, then validate, then move
     // We do skill installation via the existing function since it handles upgrades/backups
     // But we wrap it to enable rollback
@@ -628,12 +774,46 @@ Invocation syntax varies by agent (for example \`$name\`, \`/name\`, or \`@name\
     }
     adapterResult.warnings.push(...ignoredWarnings);
 
+    // Add Graphify warnings
+    if (enableGraphify && !graphifyDetection.available) {
+      adapterResult.warnings.push(
+        "Graphify is enabled but the `graphify` command was not found. Install it with: npm install -g graphify"
+      );
+    }
+    if (enableGraphify && graphifyDetection.available && !graphifyDetection.graphExists) {
+      adapterResult.warnings.push(
+        "Graphify graph not found. Generate it with: graphify update"
+      );
+    }
+
     // 12. Auto-generate project context (only after files are in place)
     const contextResult = contextGenerateCommand(targetDir);
     const llmsResult = contextLlmsCommand(targetDir);
 
-    // 12. Write agent manifest LAST
-    const manifestPath = writeAgentManifest(targetDir, agentTargets);
+    // 12. Write agent manifest LAST (includes Graphify state)
+    const manifest = {
+      version: 2 as const,
+      agents: Object.fromEntries(
+        agentTargets.map((target) => [
+          target,
+          {
+            selected: true,
+            adapter: target === "claude" || target === "cline" ? "skill-wrapper" :
+                     target === "cursor" ? "cursor-command" : "canonical",
+            status: "installed" as const,
+          },
+        ]),
+      ),
+      ...(enableGraphify ? {
+        graphify: {
+          enabled: true,
+          mode: graphifyMode,
+          graph_path: "graphify-out/graph.json",
+          last_validation: null,
+        },
+      } : {}),
+    };
+    const manifestPath = writeAgentManifest(targetDir, manifest);
 
     // Validate: check that all staged files were written
     for (const entry of stagingEntries) {
@@ -658,6 +838,8 @@ Invocation syntax varies by agent (for example \`$name\`, \`/name\`, or \`@name\
       adapterFiles: adapterResult.installedFiles,
       warnings: adapterResult.warnings,
       detected,
+      graphifyEnabled: enableGraphify,
+      graphifyMode: enableGraphify ? graphifyMode : undefined,
     };
   } catch (error) {
     // Rollback on failure

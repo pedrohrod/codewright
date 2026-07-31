@@ -146,6 +146,110 @@ npx codewright dev my-feature S001
 npx codewright review my-feature S001
 ```
 
+## Graphify Integration
+
+Graphify is an optional integration that builds a knowledge graph of your project, enabling AI agents to understand codebase context more deeply.
+
+### Installation
+
+During initialization, Graphify can be enabled:
+
+```bash
+codewright init --graphify-mode required
+codewright init --graphify-mode advisory
+```
+
+### Configuration
+
+Graphify operates in three modes:
+- `off`: Disabled (default).
+- `advisory`: Builds graph but allows workflow to continue without it.
+- `required`: Graph must be built and maintained for AI workflows.
+
+### Usage Examples
+
+```bash
+codewright graph status          # Check graph health
+codewright graph update          # Rebuild the graph
+codewright graph query "What is affected by changing AuthContext?"
+```
+
+### Update Policies
+
+The graph is automatically updated during `codewright dev` and `codewright review` if Graphify is enabled. You can manually trigger updates via `codewright graph update`.
+
+## Multi-agent Support
+
+Codewright supports multiple AI agents simultaneously, allowing different agents to handle different parts of the workflow.
+
+### Supported Agents
+
+- Claude Code
+- Codex
+- Gemini CLI
+- GitHub Copilot
+- OpenCode
+- Windsurf
+- Cline
+- Cursor
+
+### Installation with --agents
+
+```bash
+codewright init --agents all
+codewright init --agents claude,cursor
+codewright init --agents core
+```
+
+### Management Commands
+
+```bash
+codewright agents list          # List installed agents
+codewright agents add <agent>   # Add a new agent
+codewright agents remove <agent># Remove an agent
+codewright agents set <agent>   # Set default agent
+codewright agents doctor        # Check agent health
+```
+
+## Atomic Installation
+
+Codewright uses atomic installation to ensure that `init` either completes fully or rolls back completely, preventing partial states that could break workflows.
+
+## Exit Codes and Error Handling
+
+Codewright returns specific exit codes to indicate the nature of the error:
+
+- `0`: Success
+- `1`: General error
+- `2`: Invalid usage or missing arguments
+- `3`: Configuration error
+- `4`: Agent or tool not found
+- `5`: Permission denied
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: "Agent not found" error
+**Solution**: Run `codewright agents doctor` to check agent health and reinstall if necessary.
+
+**Issue**: "Graph not built" error
+**Solution**: Run `codewright graph status` to check status and `codewright graph update` to rebuild.
+
+### Debug Mode
+
+```bash
+codewright --verbose doctor
+codewright --verbose graph status
+```
+
+## Security and Privacy
+
+- Codewright runs locally on your machine.
+- No code is sent to external services without explicit configuration.
+- Agent configurations are stored locally in `.codewright/`.
+- You can audit all generated files before committing them to version control.
+
 ## Commands
 
 | Command | Description |
@@ -168,6 +272,9 @@ npx codewright review my-feature S001
 | `codewright commit <spec> <id> --yes [--push]` | Create a local commit; push only when requested |
 | `codewright perf [setup\|run] [k6\|artillery]` | Performance testing with k6 |
 | `codewright context` | Regenerate project context |
+| `codewright doctor [--json] [--fix] [--dry-run]` | Check system health and dependencies |
+| `codewright graph status\|update\|query\|explain\|affected\|path` | Manage the project knowledge graph |
+| `codewright agents list\|add\|remove\|set\|repair\|doctor` | Manage agent configurations |
 
 ## Skills
 

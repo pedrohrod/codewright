@@ -7,7 +7,7 @@ import {
   getAgentDefinition,
 } from "./registry.js";
 
-const MANAGED_MARKER = "<!-- codewright-managed: agent-adapter v1 -->";
+export const MANAGED_MARKER = "<!-- codewright-managed: agent-adapter v1 -->";
 
 // Managed section markers for root rules
 export const MANAGED_SECTION_START = "<!-- codewright-managed:start -->";
@@ -21,6 +21,25 @@ export interface AgentManifest {
   targets: AgentTarget[];
 }
 
+export interface AgentManifestV2 {
+  version: 2;
+  agents: Record<string, AgentInfo>;
+  graphify?: {
+    enabled: boolean;
+    mode: "off" | "advisory" | "required";
+    graph_path: string;
+    last_validation: string | null;
+  };
+}
+
+export interface AgentInfo {
+  selected: boolean;
+  adapter: string;
+  status: "selected" | "adapter_needed" | "installed" | "validated" | "gitignored" | "unavailable" | "conflict";
+  adapterVersion?: number;
+  installedSkills?: number;
+}
+
 export interface AdapterInstallResult {
   installedFiles: string[];
   warnings: string[];
@@ -30,25 +49,114 @@ function normalizePath(path: string): string {
   return path.split(sep).join("/");
 }
 
-export function readAgentManifest(targetDir: string): AgentManifest {
+function migrateV1ToV2(v1: { version: number; targets: string[] }): AgentManifestV2 {
+  const agents: Record<string, AgentInfo> = {};
+  for (const target of v1.targets) {
+    agents[target] = {
+      selected: true,
+      adapter: target === "claude" || target === "cline" ? "skill-wrapper" :
+               target === "cursor" ? "cursor-command" : "canonical",
+      status: "installed",
+    };
+  }
+  return {
+    version: 2,
+    agents,
+  };
+}
+
+export function readAgentManifest(targetDir: string): AgentManifestV2 {
   const path = resolve(targetDir, ".codewright", "agents.yaml");
-  if (!existsSync(path)) return { version: 1, targets: [] };
+  if (!existsSync(path)) return { version: 2, agents: {} };
   try {
-    const parsed = load(readFileSync(path, "utf-8")) as { targets?: unknown } | null;
-    const targets = Array.isArray(parsed?.targets)
-      ? parsed.targets.filter((target): target is AgentTarget => AGENT_TARGETS.includes(target as AgentTarget))
-      : [];
-    return { version: 1, targets: [...new Set(targets)] };
-  } catch {
-    return { version: 1, targets: [] };
+    const content = readFileSync(path, "utf-8");
+    const parsed = load(content) as { version?: number; targets?: unknown; agents?: unknown } | null;
+
+    if (!parsed || typeof parsed !== "object") {
+      return { version: 2, agents: {} };
+    }
+
+    // Check for v2 format
+    if (parsed.version === 2) {
+      // Validate v2 structure
+      if (parsed.agents && typeof parsed.agents === "object") {
+        return {
+          version: 2,
+          agents: parsed.agents as Record<string, AgentInfo>,
+          graphify: (parsed as any).graphify,
+        };
+      }
+      return { version: 2, agents: {} };
+    }
+
+    // Check for v1 format and migrate
+    if (parsed.version === 1) {
+      const targets = Array.isArray(parsed.targets)
+        ? parsed.targets.filter((target): target is AgentTarget => AGENT_TARGETS.includes(target as AgentTarget))
+        : [];
+      const v1Data = { version: 1, targets: [...new Set(targets)] };
+      return migrateV1ToV2(v1Data);
+    }
+
+    // Unknown version
+    throw new Error("Unsupported manifest version");
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unsupported manifest version") {
+      throw error;
+    }
+    return { version: 2, agents: {} };
   }
 }
 
-export function writeAgentManifest(targetDir: string, targets: AgentTarget[]): string {
+export function writeAgentManifest(targetDir: string, manifest: AgentManifestV2): string {
+  const path = resolve(targetDir, ".codewright", "agents.yaml");
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, dump(manifest, { noRefs: true, lineWidth: -1 }), "utf-8");
+  return path;
+}
+
+export function writeAgentManifestV1(targetDir: string, targets: AgentTarget[]): string {
   const path = resolve(targetDir, ".codewright", "agents.yaml");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, dump({ version: 1, targets }, { noRefs: true, lineWidth: -1 }), "utf-8");
   return path;
+}
+
+export function getAgentStatus(targetDir: string, target: string): AgentInfo {
+  const manifest = readAgentManifest(targetDir);
+  if (manifest.agents[target]) {
+    return manifest.agents[target];
+  }
+  return {
+    selected: false,
+    adapter: "unknown",
+    status: "unavailable",
+  };
+}
+
+export function validateManifestIntegrity(targetDir: string): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+  const manifest = readAgentManifest(targetDir);
+
+  if (manifest.version !== 2) {
+    issues.push(`Manifest version is ${manifest.version}, expected 2`);
+  }
+
+  if (!manifest.agents || typeof manifest.agents !== "object") {
+    issues.push("Missing or invalid agents object");
+    return { valid: false, issues };
+  }
+
+  for (const [name, agent] of Object.entries(manifest.agents)) {
+    if (!agent.adapter) {
+      issues.push(`Agent "${name}" is missing adapter field`);
+    }
+    if (!agent.status) {
+      issues.push(`Agent "${name}" is missing status field`);
+    }
+  }
+
+  return { valid: issues.length === 0, issues };
 }
 
 function readSkillDescription(skillPath: string): string {
@@ -130,10 +238,11 @@ export function buildManagedSection(): string {
  * - Never removes existing content
  */
 export function upsertManagedSection(content: string, section: string): string {
-  const startIndex = content.indexOf(MANAGED_SECTION_START);
-  const endIndex = content.indexOf(MANAGED_SECTION_END);
+  // Handle all occurrences of managed section (including duplicates)
+  const regex = new RegExp(`${escapeRegex(MANAGED_SECTION_START)}[\\s\\S]*?${escapeRegex(MANAGED_SECTION_END)}`, "g");
 
-  if (startIndex === -1 || endIndex === -1) {
+  // Check if any managed section exists
+  if (!regex.test(content)) {
     // Managed section doesn't exist - append at end
     if (content.length === 0) return `${section}\n`;
     const separator = content.endsWith("\n") ? "" : "\n";
@@ -141,9 +250,20 @@ export function upsertManagedSection(content: string, section: string): string {
     return `${content}${separator}${extra}${section}\n`;
   }
 
-  // Managed section exists - replace it in place
-  const before = content.slice(0, startIndex);
-  const after = content.slice(endIndex + MANAGED_SECTION_END.length);
+  // Reset regex
+  regex.lastIndex = 0;
+
+  // Find content before first managed section and after last managed section
+  const firstMatch = regex.exec(content);
+  const lastMatch = [...content.matchAll(regex)].pop();
+
+  if (!firstMatch || !lastMatch) {
+    // Should not happen, but fallback
+    return content;
+  }
+
+  const before = content.slice(0, firstMatch.index);
+  const after = content.slice(lastMatch.index! + lastMatch[0].length);
 
   // Trim trailing newlines from before and leading newlines from after
   const beforeTrimmed = before.replace(/[\n\r]+$/, "");
@@ -151,6 +271,10 @@ export function upsertManagedSection(content: string, section: string): string {
 
   const parts = [beforeTrimmed, section, afterTrimmed].filter((part) => part.length > 0);
   return parts.join("\n\n") + "\n";
+}
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -253,6 +377,40 @@ export function installManagedRootRules(options: {
   }
 
   return results;
+}
+
+// ─── Graphify Managed Block Utilities ──────────────────────────
+
+const GRAPHIFY_BLOCK_START = "<!-- codewright-managed:graphify:start -->";
+const GRAPHIFY_BLOCK_END = "<!-- codewright-managed:graphify:end -->";
+
+export function buildGraphifyManagedBlock(): string {
+  return `${GRAPHIFY_BLOCK_START}
+## Mandatory Graphify analysis
+
+- For every task that requires understanding, analyzing, reviewing, debugging, refactoring, architecting, or changing code, consult Graphify before drawing conclusions or choosing the implementation scope.
+- Start with \`graphify query "<question about the code>" --budget 4000\`.
+- Use \`graphify explain\`, \`graphify affected\`, and \`graphify path\` for symbol relationships, impact analysis, and call paths.
+- If the graph is missing or stale, follow the configured Graphify update policy.
+- Verify all relevant Graphify conclusions against source files and tests.
+- Exact searches such as \`rg\` complement Graphify but do not replace the mandatory architectural query.
+- If Graphify is unavailable, follow the configured \`off\`, \`advisory\`, or \`required\` behavior.
+${GRAPHIFY_BLOCK_END}`;
+}
+
+export function upsertGraphifyBlock(content: string): string {
+  const block = buildGraphifyManagedBlock();
+  const regex = new RegExp(`${GRAPHIFY_BLOCK_START}[\\s\\S]*?${GRAPHIFY_BLOCK_END}`, "g");
+
+  if (regex.test(content)) {
+    return content.replace(regex, block);
+  }
+  return content + "\n\n" + block;
+}
+
+export function removeGraphifyBlock(content: string): string {
+  const regex = new RegExp(`\\n*${GRAPHIFY_BLOCK_START}[\\s\\S]*?${GRAPHIFY_BLOCK_END}\\n*`, "g");
+  return content.replace(regex, "");
 }
 
 export function installAgentAdapters(options: {

@@ -1,6 +1,6 @@
 import { existsSync, writeFileSync, mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
-import { execSync } from "node:child_process";
+import { runProcess, type ProcessResult } from "../../../utils/process.js";
 import {
   loadPerfConfig,
   checkProductionLock,
@@ -54,7 +54,7 @@ Next steps:
   3. Run: codewright perf run --scenario <smoke|load|stress>`;
 }
 
-export function perfValidateCommand(cwd: string): string {
+export async function perfValidateCommand(cwd: string): Promise<string> {
   const config = loadPerfConfig(cwd);
   const errors: string[] = [];
 
@@ -84,9 +84,8 @@ export function perfValidateCommand(cwd: string): string {
   }
 
   // Check tool availability
-  try {
-    execSync(`which ${config.tool}`, { encoding: "utf-8" });
-  } catch {
+  const whichResult = await runProcess("which", [config.tool]);
+  if (whichResult.failed) {
     errors.push(`${config.tool} is not installed. Install it first.`);
   }
 
@@ -105,11 +104,11 @@ Configuration:
   - Tags: ${Object.keys(config.tags).length > 0 ? "Configured" : "None"}`;
 }
 
-export function perfRunCommand(
+export async function perfRunCommand(
   cwd: string,
   scenario: string,
   options: { environment?: string; dryRun?: boolean } = {}
-): string {
+): Promise<ProcessResult | string> {
   const config = loadPerfConfig(cwd);
 
   // Override environment if specified
@@ -131,9 +130,11 @@ export function perfRunCommand(
     return `Error: ${e}`;
   }
 
-  // Calculate timeout from duration + buffer
+  // Calculate timeout: (rampUp + duration + rampDown) * 1000 + 60s buffer
+  const rampUpMs = scenarioConfig.rampUp ? parseDuration(scenarioConfig.rampUp) : 0;
   const durationMs = parseDuration(scenarioConfig.duration);
-  const timeout = durationMs + 60000; // Add 1 minute buffer
+  const rampDownMs = scenarioConfig.rampDown ? parseDuration(scenarioConfig.rampDown) : 0;
+  const timeout = rampUpMs + durationMs + rampDownMs + 60000;
 
   if (options.dryRun) {
     return `Dry run: Would execute ${scenario} scenario against ${config.target}
@@ -149,21 +150,14 @@ Timeout: ${Math.ceil(timeout / 1000)}s`;
       return "No k6 script found. Run 'codewright perf init' first.";
     }
 
-    try {
-      const output = execSync(`k6 run ${scriptPath} --quiet 2>&1`, {
-        cwd,
-        encoding: "utf-8",
-        timeout,
-        env: {
-          ...process.env,
-          BASE_URL: config.target,
-        },
-      }).trim();
-      return output;
-    } catch (e) {
-      const err = e as Error;
-      return `k6 run failed: ${err.message}`;
-    }
+    const result = await runProcess("k6", ["run", scriptPath, "--quiet"], {
+      cwd,
+      timeout,
+      env: {
+        BASE_URL: config.target,
+      },
+    });
+    return result;
   }
 
   if (config.tool === "artillery") {
@@ -172,17 +166,11 @@ Timeout: ${Math.ceil(timeout / 1000)}s`;
       return "No Artillery config found. Run 'codewright perf init' first.";
     }
 
-    try {
-      const output = execSync(`npx artillery run ${configPath} 2>&1`, {
-        cwd: perfDir,
-        encoding: "utf-8",
-        timeout,
-      }).trim();
-      return output;
-    } catch (e) {
-      const err = e as Error;
-      return `Artillery run failed: ${err.message}`;
-    }
+    const result = await runProcess("npx", ["artillery", "run", configPath], {
+      cwd: perfDir,
+      timeout,
+    });
+    return result;
   }
 
   return `Unsupported tool: ${config.tool}`;

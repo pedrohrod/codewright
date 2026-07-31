@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { readAgentManifest } from "../../agents/install.js";
-import { getAgentDefinition } from "../../agents/registry.js";
+import { getAgentDefinition, type AgentTarget } from "../../agents/registry.js";
 import { loadConfig } from "../../config/loader.js";
 
 export function statusCommand(cwd: string): string {
@@ -29,7 +29,8 @@ export function statusCommand(cwd: string): string {
   }
 
   const agentManifest = readAgentManifest(cwd);
-  const agentLabels = agentManifest.targets.map((target) => getAgentDefinition(target).label);
+  const agentTargets = Object.keys(agentManifest.agents) as AgentTarget[];
+  const agentLabels = agentTargets.map((target) => getAgentDefinition(target).label);
   lines.push("**Agents:** " + (agentLabels.length > 0 ? agentLabels.join(", ") : "universal core only"));
   lines.push("");
 

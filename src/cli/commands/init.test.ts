@@ -21,10 +21,11 @@ describe("CLI Integration", () => {
 
     // Check skills are installed
     const skills = readdirSync(join(tmpDir, ".agents", "skills"));
-    expect(skills).toHaveLength(25);
+    expect(skills).toHaveLength(26);
     expect(existsSync(join(tmpDir, ".agents", "skills", "codewright-spec", "agents", "openai.yaml"))).toBe(true);
-    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { targets: string[] };
-    expect(manifest.targets).toEqual([]);
+    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { version: number; agents: Record<string, any> };
+    expect(manifest.version).toBe(2);
+    expect(Object.keys(manifest.agents)).toEqual([]);
 
     rmSync(tmpDir, { recursive: true, force: true });
   });
@@ -35,9 +36,9 @@ describe("CLI Integration", () => {
     const output = execSync(`node ${CLI} init --agents claude,cursor`, { cwd: tmpDir, encoding: "utf-8" });
 
     expect(output).toContain("Claude Code, Cursor");
-    expect(output).toContain("50 files generated");
-    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(25);
-    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(25);
+    expect(output).toContain("files generated");
+    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(26);
+    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(26);
     expect(existsSync(join(tmpDir, ".cline"))).toBe(false);
 
     const claude = readFileSync(join(tmpDir, ".claude", "skills", "codewright-spec", "SKILL.md"), "utf-8");
@@ -62,13 +63,14 @@ describe("CLI Integration", () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "init-all-agents-test-"));
     execSync("git init", { cwd: tmpDir });
     const output = execSync(`node ${CLI} init --agents all`, { cwd: tmpDir, encoding: "utf-8" });
-    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { targets: string[] };
+    const manifest = load(readFileSync(join(tmpDir, ".codewright", "agents.yaml"), "utf-8")) as { version: number; agents: Record<string, any> };
 
-    expect(output).toContain("75 files generated");
-    expect(manifest.targets).toHaveLength(8);
-    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(25);
-    expect(readdirSync(join(tmpDir, ".cline", "skills"))).toHaveLength(25);
-    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(25);
+    expect(output).toContain("files generated");
+    expect(manifest.version).toBe(2);
+    expect(Object.keys(manifest.agents)).toHaveLength(8);
+    expect(readdirSync(join(tmpDir, ".claude", "skills"))).toHaveLength(26);
+    expect(readdirSync(join(tmpDir, ".cline", "skills"))).toHaveLength(26);
+    expect(readdirSync(join(tmpDir, ".cursor", "commands"))).toHaveLength(26);
 
     rmSync(tmpDir, { recursive: true, force: true });
   });

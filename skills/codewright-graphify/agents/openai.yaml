@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codewright Graphify"
+  short_description: "Mandatory Graphify analysis for architectural understanding"
+  default_prompt: "Use $codewright-graphify to analyze code architecture before implementing changes."

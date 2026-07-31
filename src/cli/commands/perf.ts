@@ -4,3 +4,4 @@
 
 export { perfInitCommand, perfValidateCommand, perfRunCommand, perfReportCommand, perfCleanupCommand } from "./perf/index.js";
 export type { PerfConfig, PerfScenario, PerfThresholds, PerfResult } from "./perf/types.js";
+export type { ProcessResult } from "../../utils/process.js";
