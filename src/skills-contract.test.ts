@@ -11,8 +11,8 @@ describe("bundled skill contracts", () => {
     .map((entry) => entry.name)
     .sort();
 
-  it("ships exactly 25 valid, portable skills", () => {
-    expect(folders).toHaveLength(25);
+  it("ships exactly 26 valid, portable skills", () => {
+    expect(folders).toHaveLength(26);
     for (const folder of folders) {
       const skillPath = resolve(skillsRoot, folder, "SKILL.md");
       const content = readFileSync(skillPath, "utf-8");

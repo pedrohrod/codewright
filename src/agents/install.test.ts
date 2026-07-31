@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { installAgentAdapters, readAgentManifest, writeAgentManifest } from "./install.js";
+import { installAgentAdapters, readAgentManifest, writeAgentManifest, AgentManifestV2 } from "./install.js";
 
 function fixture(): string {
   const root = mkdtempSync(join(tmpdir(), "codewright-agents-"));
@@ -69,7 +69,14 @@ describe("agent adapter installation", () => {
 
   it("persists a validated agent manifest", () => {
     const root = fixture();
-    writeAgentManifest(root, ["claude", "cursor"]);
-    expect(readAgentManifest(root)).toEqual({ version: 1, targets: ["claude", "cursor"] });
+    const manifest: AgentManifestV2 = {
+      version: 2,
+      agents: {
+        claude: { selected: true, adapter: "skill-wrapper", status: "installed" },
+        cursor: { selected: true, adapter: "cursor-command", status: "installed" },
+      },
+    };
+    writeAgentManifest(root, manifest);
+    expect(readAgentManifest(root)).toEqual(manifest);
   });
 });

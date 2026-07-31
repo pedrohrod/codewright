@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { load } from "js-yaml";
 
 export interface CodewrightConfig {
@@ -26,6 +27,21 @@ const DEFAULTS: CodewrightConfig = {
   output_folder: ".codewright-output",
   context_file: ".codewright-output/project-context.md",
 };
+
+/**
+ * Get the current version from package.json
+ */
+export function getCurrentVersion(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const pkgPath = resolve(__dirname, "../../package.json");
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    return pkg.version || "0.1.0";
+  } catch {
+    return "0.1.0";
+  }
+}
 
 function loadYaml(path: string): Record<string, unknown> {
   if (!existsSync(path)) return {};

@@ -24,9 +24,26 @@ import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
 import { envSetupCommand, envListCommand } from "./commands/env.js";
 import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/deploy.js";
-import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
+import { perfInitCommand, perfValidateCommand, perfRunCommand, perfReportCommand, perfCleanupCommand } from "./commands/perf/index.js";
 import { helpCommand } from "./commands/help.js";
 import { statusCommand } from "./commands/status.js";
+import { doctorCommandFormatted } from "./commands/doctor.js";
+import {
+  agentsListFormatted,
+  agentsAddFormatted,
+  agentsRemoveFormatted,
+  agentsSetFormatted,
+  agentsRepairFormatted,
+  agentsDoctorFormatted,
+} from "./commands/agents.js";
+import {
+  graphStatusCommand,
+  graphUpdateCommand,
+  graphQueryCommand,
+  graphExplainCommand,
+  graphAffectedCommand,
+  graphPathCommand,
+} from "./commands/graph.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,13 +85,22 @@ program
   .option("--dir <path>", "Target directory", ".")
   .option("--agents <targets>", "Comma-separated agents, 'all', or 'core'")
   .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
+  .option("--dry-run", "Show what would be done without making changes")
+  .option("--yes", "Skip confirmation prompts")
+  .option("--with-graphify", "Enable Graphify integration (advisory mode)")
+  .option("--graphify-mode <mode>", "Graphify mode: off, advisory, or required")
   .action(async (opts) => {
     try {
       const agents = await selectAgentTargets(opts.agents);
       const result = initCommand(process.cwd(), opts.dir, {
         upgradeSkills: opts.upgradeSkills,
         agents,
+        dryRun: opts.dryRun,
+        withGraphify: opts.withGraphify,
+        graphifyMode: opts.graphifyMode,
       });
+      // Dry-run output is printed by initCommand, so we skip normal output
+      if (opts.dryRun) return;
       console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
       console.log(`  Output: ${result.outputDir}`);
       console.log("  Skills: .agents/skills/ (universal core)");
@@ -82,6 +108,7 @@ program
       console.log(`  Agents: ${labels.length > 0 ? labels.join(", ") : "core only"}`);
       if (result.adapterFiles.length > 0) console.log(`  Adapters: ${result.adapterFiles.length} files generated`);
       for (const warning of result.warnings) console.warn(`  Warning: ${warning}`);
+      if (result.graphifyEnabled) console.log(`  Graphify: ${result.graphifyMode} mode`);
       const d = result.detected;
       if (d.framework) console.log(`  Framework: ${d.framework}`);
       if (d.test_runner) console.log(`  Test runner: ${d.test_runner}`);
@@ -330,19 +357,67 @@ deployCmd
   });
 
 // ─── perf ───────────────────────────────────────────────
-program
-  .command("perf")
-  .description("Performance testing with k6")
-  .argument("[action]", "Action: setup or run", "setup")
-  .argument("[tool]", "Tool: k6", "k6")
-  .action((action: string, tool: string) => {
-    if (action === "run") {
-      const result = perfRunCommand(process.cwd(), tool);
+const perfCmd = program.command("perf").description("Performance testing with k6 or Artillery");
+
+perfCmd
+  .command("init")
+  .description("Initialize performance testing configuration")
+  .action(() => {
+    const result = perfInitCommand(process.cwd());
+    console.log(result);
+  });
+
+perfCmd
+  .command("validate")
+  .description("Validate performance testing configuration")
+  .action(async () => {
+    const result = await perfValidateCommand(process.cwd());
+    console.log(result);
+  });
+
+perfCmd
+  .command("run")
+  .description("Run performance test scenario")
+  .argument("<scenario>", "Scenario: smoke, load, or stress")
+  .option("--environment <env>", "Override environment (dev, staging, production)")
+  .option("--dry-run", "Show what would be executed without running")
+  .action(async (scenario: string, opts) => {
+    const result = await perfRunCommand(process.cwd(), scenario, {
+      environment: opts.environment,
+      dryRun: opts.dryRun,
+    });
+    // If result is a string (error/dry-run), print it directly
+    if (typeof result === "string") {
       console.log(result);
     } else {
-      const result = perfSetupCommand(process.cwd(), tool);
-      console.log(result);
+      // ProcessResult from runProcess
+      console.log(result.stdout);
+      if (result.stderr) console.error(result.stderr);
+      if (result.failed) {
+        process.exitCode = result.exitCode || 1;
+      }
     }
+  });
+
+perfCmd
+  .command("report")
+  .description("Generate performance test report")
+  .option("--format <format>", "Output format: json or html", "json")
+  .option("--output <path>", "Output file path")
+  .action((opts) => {
+    const result = perfReportCommand(process.cwd(), {
+      format: opts.format,
+      output: opts.output,
+    });
+    console.log(result);
+  });
+
+perfCmd
+  .command("cleanup")
+  .description("Clean up performance test results")
+  .action(() => {
+    const result = perfCleanupCommand(process.cwd());
+    console.log(result);
   });
 
 // ─── help ───────────────────────────────────────────────
@@ -364,6 +439,154 @@ program
   .action(() => {
     const result = statusCommand(process.cwd());
     console.log(result);
+  });
+
+// ─── doctor ─────────────────────────────────────────────
+program
+  .command("doctor")
+  .description("Validate project health and installation state")
+  .option("--json", "Output result as JSON")
+  .option("--fix", "Automatically fix fixable issues")
+  .option("--dry-run", "Show what would be fixed without making changes")
+  .action(async (opts) => {
+    try {
+      const { doctorCommand, doctorCommandFormatted, applyFixes } = await import("./commands/doctor.js");
+
+      if (opts.json) {
+        const result = doctorCommand(process.cwd());
+        console.log(JSON.stringify(result, null, 2));
+      } else if (opts.fix) {
+        const initialResult = doctorCommand(process.cwd());
+        await applyFixes(initialResult, process.cwd(), opts.dryRun);
+        console.log(doctorCommandFormatted(process.cwd()));
+      } else {
+        console.log(doctorCommandFormatted(process.cwd()));
+      }
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    }
+  });
+
+// ─── agents ─────────────────────────────────────────────
+const agentsCmd = program.command("agents").description("Manage agent adapters");
+
+agentsCmd
+  .command("list")
+  .description("List installed agents")
+  .action(() => {
+    const result = agentsListFormatted(process.cwd());
+    console.log(result);
+  });
+
+agentsCmd
+  .command("add")
+  .description("Add agent adapters")
+  .argument("<targets>", "Comma-separated agent names")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsAddFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("remove")
+  .description("Remove agent adapters")
+  .argument("<targets>", "Comma-separated agent names")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsRemoveFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("set")
+  .description("Set exactly these agents (replaces current selection)")
+  .argument("<targets>", "Comma-separated agent names, 'all', or 'core'")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsSetFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("repair")
+  .description("Reinstall adapters for all selected agents")
+  .action(() => {
+    const result = agentsRepairFormatted(process.cwd());
+    console.log(result);
+  });
+
+agentsCmd
+  .command("doctor")
+  .description("Validate agent installation state")
+  .action(() => {
+    const result = agentsDoctorFormatted(process.cwd());
+    console.log(result);
+  });
+
+// ─── graph ─────────────────────────────────────────────
+const graphCmd = program.command("graph").description("Graphify integration commands");
+
+graphCmd
+  .command("status")
+  .description("Check Graphify status")
+  .action(async () => {
+    const result = await graphStatusCommand(process.cwd());
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
+  });
+
+graphCmd
+  .command("update")
+  .description("Update the code graph")
+  .action(async () => {
+    const result = await graphUpdateCommand(process.cwd());
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
+  });
+
+graphCmd
+  .command("query")
+  .description("Query the code graph")
+  .argument("<question>", "Architectural question to ask")
+  .option("--budget <n>", "Token budget", "4000")
+  .action(async (question: string, opts) => {
+    const result = await graphQueryCommand(process.cwd(), question, parseInt(opts.budget));
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
+  });
+
+graphCmd
+  .command("explain")
+  .description("Explain a symbol")
+  .argument("<symbol>", "Symbol to explain")
+  .action(async (symbol: string) => {
+    const result = await graphExplainCommand(process.cwd(), symbol);
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
+  });
+
+graphCmd
+  .command("affected")
+  .description("Impact analysis for a symbol")
+  .argument("<symbol>", "Symbol to analyze")
+  .option("--depth <n>", "Depth of analysis", "3")
+  .action(async (symbol: string, opts) => {
+    const result = await graphAffectedCommand(process.cwd(), symbol, parseInt(opts.depth));
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
+  });
+
+graphCmd
+  .command("path")
+  .description("Find call path between symbols")
+  .argument("<from>", "Source symbol")
+  .argument("<to>", "Target symbol")
+  .action(async (from: string, to: string) => {
+    const result = await graphPathCommand(process.cwd(), from, to);
+    console.log(result.output);
+    if (!result.success) process.exitCode = 1;
   });
 
 await program.parseAsync(process.argv);
