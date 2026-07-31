@@ -24,9 +24,18 @@ import { depsCheckCommand } from "./commands/deps.js";
 import { testGenFromSpecCommand } from "./commands/testgen.js";
 import { envSetupCommand, envListCommand } from "./commands/env.js";
 import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/deploy.js";
-import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
+import { perfInitCommand, perfValidateCommand, perfRunCommand, perfReportCommand, perfCleanupCommand } from "./commands/perf/index.js";
 import { helpCommand } from "./commands/help.js";
 import { statusCommand } from "./commands/status.js";
+import { doctorCommandFormatted } from "./commands/doctor.js";
+import {
+  agentsListFormatted,
+  agentsAddFormatted,
+  agentsRemoveFormatted,
+  agentsSetFormatted,
+  agentsRepairFormatted,
+  agentsDoctorFormatted,
+} from "./commands/agents.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,13 +77,18 @@ program
   .option("--dir <path>", "Target directory", ".")
   .option("--agents <targets>", "Comma-separated agents, 'all', or 'core'")
   .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
+  .option("--dry-run", "Show what would be done without making changes")
+  .option("--yes", "Skip confirmation prompts")
   .action(async (opts) => {
     try {
       const agents = await selectAgentTargets(opts.agents);
       const result = initCommand(process.cwd(), opts.dir, {
         upgradeSkills: opts.upgradeSkills,
         agents,
+        dryRun: opts.dryRun,
       });
+      // Dry-run output is printed by initCommand, so we skip normal output
+      if (opts.dryRun) return;
       console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
       console.log(`  Output: ${result.outputDir}`);
       console.log("  Skills: .agents/skills/ (universal core)");
@@ -330,19 +344,57 @@ deployCmd
   });
 
 // ─── perf ───────────────────────────────────────────────
-program
-  .command("perf")
-  .description("Performance testing with k6")
-  .argument("[action]", "Action: setup or run", "setup")
-  .argument("[tool]", "Tool: k6", "k6")
-  .action((action: string, tool: string) => {
-    if (action === "run") {
-      const result = perfRunCommand(process.cwd(), tool);
-      console.log(result);
-    } else {
-      const result = perfSetupCommand(process.cwd(), tool);
-      console.log(result);
-    }
+const perfCmd = program.command("perf").description("Performance testing with k6 or Artillery");
+
+perfCmd
+  .command("init")
+  .description("Initialize performance testing configuration")
+  .action(() => {
+    const result = perfInitCommand(process.cwd());
+    console.log(result);
+  });
+
+perfCmd
+  .command("validate")
+  .description("Validate performance testing configuration")
+  .action(() => {
+    const result = perfValidateCommand(process.cwd());
+    console.log(result);
+  });
+
+perfCmd
+  .command("run")
+  .description("Run performance test scenario")
+  .argument("<scenario>", "Scenario: smoke, load, or stress")
+  .option("--environment <env>", "Override environment (dev, staging, production)")
+  .option("--dry-run", "Show what would be executed without running")
+  .action((scenario: string, opts) => {
+    const result = perfRunCommand(process.cwd(), scenario, {
+      environment: opts.environment,
+      dryRun: opts.dryRun,
+    });
+    console.log(result);
+  });
+
+perfCmd
+  .command("report")
+  .description("Generate performance test report")
+  .option("--format <format>", "Output format: json or html", "json")
+  .option("--output <path>", "Output file path")
+  .action((opts) => {
+    const result = perfReportCommand(process.cwd(), {
+      format: opts.format,
+      output: opts.output,
+    });
+    console.log(result);
+  });
+
+perfCmd
+  .command("cleanup")
+  .description("Clean up performance test results")
+  .action(() => {
+    const result = perfCleanupCommand(process.cwd());
+    console.log(result);
   });
 
 // ─── help ───────────────────────────────────────────────
@@ -363,6 +415,72 @@ program
   .description("Show project health overview")
   .action(() => {
     const result = statusCommand(process.cwd());
+    console.log(result);
+  });
+
+// ─── doctor ─────────────────────────────────────────────
+program
+  .command("doctor")
+  .description("Validate project health and installation state")
+  .action(() => {
+    const result = doctorCommandFormatted(process.cwd());
+    console.log(result);
+  });
+
+// ─── agents ─────────────────────────────────────────────
+const agentsCmd = program.command("agents").description("Manage agent adapters");
+
+agentsCmd
+  .command("list")
+  .description("List installed agents")
+  .action(() => {
+    const result = agentsListFormatted(process.cwd());
+    console.log(result);
+  });
+
+agentsCmd
+  .command("add")
+  .description("Add agent adapters")
+  .argument("<targets>", "Comma-separated agent names")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsAddFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("remove")
+  .description("Remove agent adapters")
+  .argument("<targets>", "Comma-separated agent names")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsRemoveFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("set")
+  .description("Set exactly these agents (replaces current selection)")
+  .argument("<targets>", "Comma-separated agent names, 'all', or 'core'")
+  .action((targets: string) => {
+    const agentTargets = parseAgentTargets(targets);
+    const result = agentsSetFormatted(process.cwd(), agentTargets);
+    console.log(result);
+  });
+
+agentsCmd
+  .command("repair")
+  .description("Reinstall adapters for all selected agents")
+  .action(() => {
+    const result = agentsRepairFormatted(process.cwd());
+    console.log(result);
+  });
+
+agentsCmd
+  .command("doctor")
+  .description("Validate agent installation state")
+  .action(() => {
+    const result = agentsDoctorFormatted(process.cwd());
     console.log(result);
   });
 
