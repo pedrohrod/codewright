@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync, cpSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadConfig } from "../../config/loader.js";
+import { loadConfig, getCurrentVersion } from "../../config/loader.js";
 import {
   installAgentAdapters,
   installManagedRootRules,
@@ -529,7 +529,7 @@ Add your project-specific rules here. These rules are loaded by codewright skill
       const lang = detected.project_language ? `\nproject_language: "${detected.project_language}"` : "";
       const strict = detected.strict_mode !== undefined ? `\nstrict_mode: ${detected.strict_mode}` : "";
 
-      const yaml = `codewright_version: "${config.codewright_version}"
+      const yaml = `codewright_version: "${getCurrentVersion()}"
 project_name: "${resolve(targetDir).split("/").pop() || "my-project"}"
 stack: "${detected.framework || "node"}"
 communication_language: "en"
