@@ -132,6 +132,17 @@ Usage
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+    CODEWRIGHT_MODEL: ${{ vars.CODEWRIGHT_MODEL }}
+```
+
+For OpenAI-compatible providers (gateways, self-hosted):
+
+```yaml
+    LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+    LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
     CODEWRIGHT_MODEL: ${{ vars.CODEWRIGHT_MODEL }}
 ```
 

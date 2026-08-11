@@ -72,14 +72,21 @@ async function createSourceControlProvider(
 async function createModel(
   modelConfig: ModelProviderConfig,
 ): Promise<LanguageModel> {
-  const apiKey = modelConfig.apiKey || "";
-  const model = modelConfig.model || "";
+  // Resolve from config with env var fallbacks
+  const apiKey = modelConfig.apiKey
+    || process.env.OPENAI_API_KEY
+    || process.env.ANTHROPIC_API_KEY
+    || process.env.GEMINI_API_KEY
+    || process.env.LLM_API_KEY
+    || "";
+  const model = modelConfig.model || process.env.CODEWRIGHT_MODEL || "";
+  const baseURL = modelConfig.baseURL || process.env.LLM_BASE_URL;
 
   if (modelConfig.provider === "openai") {
     const { openai } = await import("../../models/openai/index.js");
-    const provider = openai({ apiKey, model, baseURL: modelConfig.baseURL });
+    const provider = openai({ apiKey, model, baseURL });
     provider.validate();
-    return provider.createModel({ apiKey, model, baseURL: modelConfig.baseURL });
+    return provider.createModel({ apiKey, model, baseURL });
   } else if (modelConfig.provider === "anthropic") {
     const { anthropic } = await import("../../models/anthropic/index.js");
     const provider = anthropic({ apiKey, model });
@@ -92,12 +99,12 @@ async function createModel(
     return provider.createModel({ apiKey, model });
   } else if (modelConfig.provider === "openai-compatible") {
     const { openaiCompatible } = await import("../../models/compatible/index.js");
-    if (!modelConfig.baseURL) {
-      throw new Error("openai-compatible provider requires baseURL");
+    if (!baseURL) {
+      throw new Error("openai-compatible provider requires baseURL (set via config or LLM_BASE_URL env var)");
     }
-    const provider = openaiCompatible({ apiKey, model, baseURL: modelConfig.baseURL });
+    const provider = openaiCompatible({ apiKey, model, baseURL });
     provider.validate();
-    return provider.createModel({ apiKey, model, baseURL: modelConfig.baseURL });
+    return provider.createModel({ apiKey, model, baseURL });
   } else {
     throw new Error(`Unknown model provider: ${modelConfig.provider}`);
   }
