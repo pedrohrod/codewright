@@ -2,6 +2,7 @@ import type {
   CodewrightConfig,
   TicketConfig,
   SourceControlConfig,
+  ModelProviderConfig,
 } from "../../config/loader.js";
 import { loadConfigAsync } from "../../config/loader.js";
 import type {
@@ -13,6 +14,7 @@ import type { SourceControlProvider } from "../../providers/source-control-provi
 import type { GitClient } from "../../providers/git/git-client.js";
 import { ticketToPullRequest } from "../../orchestrator/workflow.js";
 import type { EngineeringResult } from "../../providers/validation.js";
+import type { LanguageModel } from "../../models/language-model.js";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -67,12 +69,49 @@ async function createSourceControlProvider(
   }
 }
 
+async function createModel(
+  modelConfig: ModelProviderConfig,
+): Promise<LanguageModel> {
+  const apiKey = modelConfig.apiKey || "";
+  const model = modelConfig.model || "";
+
+  if (modelConfig.provider === "openai") {
+    const { openai } = await import("../../models/openai/index.js");
+    const provider = openai({ apiKey, model, baseURL: modelConfig.baseURL });
+    provider.validate();
+    return provider.createModel({ apiKey, model, baseURL: modelConfig.baseURL });
+  } else if (modelConfig.provider === "anthropic") {
+    const { anthropic } = await import("../../models/anthropic/index.js");
+    const provider = anthropic({ apiKey, model });
+    provider.validate();
+    return provider.createModel({ apiKey, model });
+  } else if (modelConfig.provider === "gemini") {
+    const { gemini } = await import("../../models/gemini/index.js");
+    const provider = gemini({ apiKey, model });
+    provider.validate();
+    return provider.createModel({ apiKey, model });
+  } else if (modelConfig.provider === "openai-compatible") {
+    const { openaiCompatible } = await import("../../models/compatible/index.js");
+    if (!modelConfig.baseURL) {
+      throw new Error("openai-compatible provider requires baseURL");
+    }
+    const provider = openaiCompatible({ apiKey, model, baseURL: modelConfig.baseURL });
+    provider.validate();
+    return provider.createModel({ apiKey, model, baseURL: modelConfig.baseURL });
+  } else {
+    throw new Error(`Unknown model provider: ${modelConfig.provider}`);
+  }
+}
+
 async function createDefaultProviders(config: CodewrightConfig, cwd: string) {
   if (!config.tickets) {
     throw new Error("No ticket provider configured. Add a 'tickets' section to your config.");
   }
   if (!config.sourceControl) {
     throw new Error("No source control provider configured. Add a 'sourceControl' section to your config.");
+  }
+  if (!config.model) {
+    throw new Error("No model configured. Add a 'model' section to your config.");
   }
 
   const ticketProvider = await createTicketProvider(config.tickets);
@@ -81,7 +120,26 @@ async function createDefaultProviders(config: CodewrightConfig, cwd: string) {
   const { LocalGitClient } = await import("../../providers/git/local-git-client.js");
   const git = new LocalGitClient(cwd);
 
-  return { ticketProvider, sourceControl, git };
+  // Create default model
+  const defaultModel = await createModel(config.model);
+
+  // Create per-agent model overrides if configured
+  const agentModels: Record<string, LanguageModel> = {};
+  if (config.agents) {
+    for (const [name, agentConfig] of Object.entries(config.agents)) {
+      if (agentConfig.model) {
+        agentModels[name] = await createModel(agentConfig.model);
+      }
+    }
+  }
+
+  return {
+    ticketProvider,
+    sourceControl,
+    git,
+    model: defaultModel,
+    agentModels,
+  };
 }
 
 // ─── Core workflow ────────────────────────────────────────
@@ -93,6 +151,8 @@ async function processTicket(
   git: GitClient,
   dryRun: boolean,
   cwd: string,
+  model: LanguageModel,
+  agentModels: Record<string, LanguageModel>,
 ): Promise<{ success: boolean; blocked: boolean; error?: string; result?: EngineeringResult }> {
   if (dryRun) {
     return { success: true, blocked: false };
@@ -107,6 +167,12 @@ async function processTicket(
       workflow: { draft: true, maxIterations: 3 },
       validation: {},
       cwd,
+      model,
+      agents: {
+        planner: agentModels.planner ? { model: agentModels.planner } : undefined,
+        engineer: agentModels.engineer ? { model: agentModels.engineer } : undefined,
+        reviewer: agentModels.reviewer ? { model: agentModels.reviewer } : undefined,
+      },
     });
 
     if (result.status === "blocked") {
@@ -131,6 +197,8 @@ export interface ScanDeps {
     ticketProvider: TicketProvider;
     sourceControl: SourceControlProvider;
     git: GitClient;
+    model: LanguageModel;
+    agentModels: Record<string, LanguageModel>;
   }>;
 }
 
@@ -155,10 +223,12 @@ export async function scanCommand(
     };
   }
 
-  // 2. Create providers
+  // 2. Create providers (including model)
   let ticketProvider: TicketProvider;
   let sourceControl: SourceControlProvider;
   let git: GitClient;
+  let model: LanguageModel;
+  let agentModels: Record<string, LanguageModel>;
 
   try {
     const createProvidersFn = deps?.createProviders ?? createDefaultProviders;
@@ -166,6 +236,8 @@ export async function scanCommand(
     ticketProvider = providers.ticketProvider;
     sourceControl = providers.sourceControl;
     git = providers.git;
+    model = providers.model;
+    agentModels = providers.agentModels;
   } catch (error) {
     return {
       status: "failed",
@@ -208,6 +280,8 @@ export async function scanCommand(
         git,
         options.dryRun ?? false,
         cwd,
+        model,
+        agentModels,
       );
 
       if (result.blocked) {

@@ -68,6 +68,18 @@ function makeMockGit(): GitClient {
   } as unknown as GitClient;
 }
 
+function makeMockModel() {
+  return {
+    name: "mock",
+    modelId: "mock-model",
+    generate: vi.fn().mockResolvedValue({
+      content: "Mock response",
+      usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+      model: "mock-model",
+    }),
+  };
+}
+
 function makeDeps(config: CodewrightConfig, overrides?: {
   ticketProvider?: TicketProvider;
   sourceControl?: SourceControlProvider;
@@ -76,10 +88,11 @@ function makeDeps(config: CodewrightConfig, overrides?: {
   const ticketProvider = overrides?.ticketProvider ?? makeMockTicketProvider();
   const sourceControl = overrides?.sourceControl ?? makeMockSourceControl();
   const git = overrides?.git ?? makeMockGit();
+  const model = makeMockModel();
 
   return {
     loadConfig: vi.fn().mockResolvedValue(config),
-    createProviders: vi.fn().mockResolvedValue({ ticketProvider, sourceControl, git }),
+    createProviders: vi.fn().mockResolvedValue({ ticketProvider, sourceControl, git, model, agentModels: {} }),
   };
 }
 

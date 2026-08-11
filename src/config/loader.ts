@@ -26,6 +26,16 @@ export interface CodewrightConfig {
   workflow?: WorkflowAutomationConfig;
   validation?: ValidationAutomationConfig;
   execution?: ExecutionConfig;
+
+  // Model provider
+  model?: ModelProviderConfig;
+
+  // Per-agent model overrides
+  agents?: {
+    planner?: { model?: ModelProviderConfig };
+    engineer?: { model?: ModelProviderConfig };
+    reviewer?: { model?: ModelProviderConfig };
+  };
 }
 
 export interface TicketConfig {
@@ -52,6 +62,13 @@ export interface ValidationAutomationConfig {
 
 export interface ExecutionConfig {
   maxTicketsPerRun?: number;
+}
+
+export interface ModelProviderConfig {
+  provider: string;
+  apiKey?: string;
+  model?: string;
+  baseURL?: string;
 }
 
 // ─── defineConfig helper ──────────────────────────────────

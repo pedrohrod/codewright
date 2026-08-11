@@ -91,6 +91,18 @@ function createGitClient(overrides?: { hasChanges?: boolean; diff?: string }): G
   };
 }
 
+function makeMockModel() {
+  return {
+    name: "mock",
+    modelId: "mock-model",
+    generate: vi.fn().mockResolvedValue({
+      content: "Mock response",
+      usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+      model: "mock-model",
+    }),
+  };
+}
+
 function makeConfig(overrides?: {
   tickets?: Ticket[];
   claimResult?: ClaimResult;
@@ -117,6 +129,7 @@ function makeConfig(overrides?: {
     },
     validation: overrides?.validation ?? { commands: ["echo ok"] },
     cwd: "/tmp/test-project",
+    model: makeMockModel() as any,
   };
 }
 

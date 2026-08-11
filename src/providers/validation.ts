@@ -55,6 +55,10 @@ export interface EngineeringResult {
     iterations: number;
     durationMs: number;
   };
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 export interface WorkflowConfig {
