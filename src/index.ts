@@ -94,5 +94,9 @@ export { anthropic } from "./models/anthropic/index.js";
 export { gemini } from "./models/gemini/index.js";
 export { openaiCompatible } from "./models/compatible/index.js";
 
+// Ticket providers
+export { githubIssues } from "./providers/github-issues/index.js";
+export type { GitHubIssuesConfig } from "./providers/github-issues/index.js";
+
 // Agent definitions
 export { plannerAgent, engineerAgent, reviewerAgent } from "./agents/definitions.js";

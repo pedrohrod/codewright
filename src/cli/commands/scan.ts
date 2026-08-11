@@ -47,8 +47,17 @@ async function createTicketProvider(
       reviewList: (ticketConfig.reviewList as string) || "Human Review",
       blockedList: (ticketConfig.blockedList as string) || "Blocked",
     });
-  } else if (ticketConfig.provider === "github") {
-    throw new Error("GitHub ticket provider not yet implemented");
+  } else if (ticketConfig.provider === "github-issues") {
+    const { githubIssues } = await import("../../providers/github-issues/index.js");
+    return githubIssues({
+      token: process.env.GITHUB_TOKEN || "",
+      owner: (ticketConfig.owner as string) || process.env.GITHUB_REPOSITORY?.split("/")[0] || "",
+      repo: (ticketConfig.repo as string) || process.env.GITHUB_REPOSITORY?.split("/")[1] || "",
+      readyLabel: (ticketConfig.readyLabel as string) || "codewright:ready",
+      workingLabel: (ticketConfig.workingLabel as string) || "codewright:working",
+      reviewLabel: (ticketConfig.reviewLabel as string) || "codewright:review",
+      blockedLabel: (ticketConfig.blockedList as string) || "codewright:blocked",
+    });
   } else {
     throw new Error(`Unknown ticket provider: ${ticketConfig.provider}`);
   }
