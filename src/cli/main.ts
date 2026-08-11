@@ -27,6 +27,7 @@ import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/d
 import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
 import { helpCommand } from "./commands/help.js";
 import { statusCommand } from "./commands/status.js";
+import { scanCommand } from "./commands/scan.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -342,6 +343,45 @@ program
     } else {
       const result = perfSetupCommand(process.cwd(), tool);
       console.log(result);
+    }
+  });
+
+// ─── scan ──────────────────────────────────────────────
+program
+  .command("scan")
+  .description("Scan for tickets and process them")
+  .option("--once", "Run once and exit")
+  .option("--dry-run", "Show what would be processed without making changes")
+  .option("--limit <n>", "Maximum tickets to process", "1")
+  .option("--ticket <id>", "Process a specific ticket")
+  .action(async (opts) => {
+    try {
+      const result = await scanCommand(process.cwd(), {
+        once: opts.once,
+        dryRun: opts.dryRun,
+        limit: opts.limit ? parseInt(opts.limit, 10) : undefined,
+        ticketId: opts.ticket,
+      });
+
+      if (result.status === "no_tickets") {
+        console.log("✓ No eligible tickets found.");
+      } else if (result.status === "completed") {
+        console.log(`✓ Processed ${result.ticketsProcessed} ticket(s)`);
+      } else if (result.status === "no_changes") {
+        console.log("✓ No changes to commit.");
+      } else if (result.status === "blocked") {
+        console.log("⚠ Ticket blocked — human input required.");
+      } else if (result.status === "failed") {
+        console.error("✗ Processing failed.");
+        process.exitCode = 1;
+      }
+
+      for (const error of result.errors) {
+        console.error(`  Error: ${error}`);
+      }
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
     }
   });
 
