@@ -58,6 +58,16 @@ async function createTicketProvider(
       reviewLabel: (ticketConfig.reviewLabel as string) || "codewright:review",
       blockedLabel: (ticketConfig.blockedList as string) || "codewright:blocked",
     });
+  } else if (ticketConfig.provider === "sentry") {
+    const { sentry } = await import("../../providers/sentry/index.js");
+    return sentry({
+      token: process.env.SENTRY_AUTH_TOKEN || "",
+      organization: (ticketConfig.organization as string) || process.env.SENTRY_ORG || "",
+      project: (ticketConfig.project as string) || process.env.SENTRY_PROJECT || "",
+      serverUrl: (ticketConfig.serverUrl as string) || process.env.SENTRY_SERVER_URL || "",
+      query: (ticketConfig.query as string) || "is:unresolved",
+      level: (ticketConfig.level as string) || undefined,
+    });
   } else {
     throw new Error(`Unknown ticket provider: ${ticketConfig.provider}`);
   }

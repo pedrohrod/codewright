@@ -98,5 +98,9 @@ export { openaiCompatible } from "./models/compatible/index.js";
 export { githubIssues } from "./providers/github-issues/index.js";
 export type { GitHubIssuesConfig } from "./providers/github-issues/index.js";
 
+// Sentry ticket provider
+export { sentry } from "./providers/sentry/index.js";
+export type { SentryConfig } from "./providers/sentry/index.js";
+
 // Agent definitions
 export { plannerAgent, engineerAgent, reviewerAgent } from "./agents/definitions.js";
