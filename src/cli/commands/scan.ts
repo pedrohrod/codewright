@@ -88,6 +88,47 @@ async function createSourceControlProvider(
   }
 }
 
+/**
+ * Auto-detect model provider from environment variables.
+ * Falls back to OpenAI if OPENAI_API_KEY is set.
+ */
+function detectModelFromEnv(): ModelProviderConfig {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return {
+      provider: "anthropic",
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: process.env.CODEWRIGHT_MODEL || "claude-sonnet-4-20250514",
+    };
+  }
+  if (process.env.GEMINI_API_KEY) {
+    return {
+      provider: "gemini",
+      apiKey: process.env.GEMINI_API_KEY,
+      model: process.env.CODEWRIGHT_MODEL || "gemini-2.5-flash",
+    };
+  }
+  if (process.env.LLM_API_KEY && process.env.LLM_BASE_URL) {
+    return {
+      provider: "openai-compatible",
+      apiKey: process.env.LLM_API_KEY,
+      baseURL: process.env.LLM_BASE_URL,
+      model: process.env.CODEWRIGHT_MODEL || "default",
+    };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      provider: "openai",
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.CODEWRIGHT_MODEL || "gpt-4o",
+    };
+  }
+  throw new Error(
+    "No model configured. Set a 'model' section in your config, " +
+    "or provide an API key via OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, " +
+    "or LLM_API_KEY + LLM_BASE_URL environment variables.",
+  );
+}
+
 async function createModel(
   modelConfig: ModelProviderConfig,
 ): Promise<LanguageModel> {
@@ -136,9 +177,8 @@ async function createDefaultProviders(config: CodewrightConfig, cwd: string) {
   if (!config.sourceControl) {
     throw new Error("No source control provider configured. Add a 'sourceControl' section to your config.");
   }
-  if (!config.model) {
-    throw new Error("No model configured. Add a 'model' section to your config.");
-  }
+  // Auto-detect model from env vars if not configured
+  const modelConfig = config.model ?? detectModelFromEnv();
 
   const ticketProvider = await createTicketProvider(config.tickets);
   const sourceControl = await createSourceControlProvider(config.sourceControl);
@@ -147,7 +187,7 @@ async function createDefaultProviders(config: CodewrightConfig, cwd: string) {
   const git = new LocalGitClient(cwd);
 
   // Create default model
-  const defaultModel = await createModel(config.model);
+  const defaultModel = await createModel(modelConfig);
 
   // Create per-agent model overrides if configured
   const agentModels: Record<string, LanguageModel> = {};
