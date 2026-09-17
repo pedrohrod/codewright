@@ -1,0 +1,10 @@
+version: 1
+targets:
+  - codex
+  - claude
+  - gemini
+  - copilot
+  - opencode
+  - windsurf
+  - cline
+  - cursor

@@ -3,3 +3,7 @@ dist/
 .codewright-output/
 .codewright/config.user.yaml
 *.tmp
+.cursor/
+.cline/
+.claude/
+.agents/

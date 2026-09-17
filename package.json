@@ -50,12 +50,14 @@
     "commander": "^12.1.0",
     "glob": "^10.4.5",
     "js-yaml": "^4.1.0",
+    "prompts": "^2.4.2",
     "smol-toml": "^1.7.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
+    "@types/prompts": "^2.4.9",
     "eslint": "^10.7.0",
     "tsup": "^8.2.4",
     "typescript": "^5.5.4",

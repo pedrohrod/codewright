@@ -5,16 +5,18 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import prompts from "prompts";
 import {
-  formatAgentMenu,
   getAgentDefinition,
   parseAgentTargets,
-  parseInteractiveAgentSelection,
+  AGENT_DEFINITIONS,
+  AGENT_TARGETS,
   type AgentTarget,
 } from "../agents/registry.js";
 import { initCommand } from "./commands/init.js";
 import { specCreateCommand, specUpdateCommand, specHistoryCommand, specDiffCommand, specVersionCommand, specSyncCommand } from "./commands/spec.js";
-import { storyCreateCommand, storyListCommand } from "./commands/story.js";
+import { storyCreateCommand, storyListCommand, storySpawnCommand } from "./commands/story.js";
+import { developCommand } from "./commands/develop.js";
 import { contextGenerateCommand, contextLlmsCommand } from "./commands/context.js";
 import { devStartCommand, reviewPrepareCommand } from "./commands/review.js";
 import { commitCommand } from "./commands/commit.js";
@@ -42,16 +44,26 @@ function getVersion(): string {
 
 async function selectAgentTargets(option?: string): Promise<AgentTarget[]> {
   if (option !== undefined) return parseAgentTargets(option);
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return [];
+  if (!process.stdin.isTTY) return [];
 
-  console.log(formatAgentMenu());
-  const prompt = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await prompt.question("> ");
-    return parseInteractiveAgentSelection(answer);
-  } finally {
-    prompt.close();
-  }
+  const { agents } = await prompts({
+    type: "multiselect",
+    name: "agents",
+    message: "Select AI agents (space to toggle, enter to confirm):",
+    choices: [
+      ...AGENT_DEFINITIONS.map(def => ({
+        title: def.label,
+        value: def.id,
+        description: def.adapter === "canonical" ? "universal core" : "native adapter",
+      })),
+      { title: "All agents", value: "__all__", description: "select all available agents" },
+    ],
+    hint: "Space to select • Enter to confirm • ↑↓ navigate",
+  });
+
+  if (!agents || agents.length === 0) return [];
+  if (agents.includes("__all__")) return [...AGENT_TARGETS];
+  return agents as AgentTarget[];
 }
 
 const program = new Command();
@@ -143,15 +155,19 @@ program
 // ─── story ──────────────────────────────────────────────
 program
   .command("story")
-  .description("Create or list stories")
+  .description("Create, list, or spawn agents for stories")
   .argument("[spec]", "Spec slug (if only spec given → list stories)")
   .argument("[id]", "Story ID (e.g. S001)")
   .argument("[title]", "Story title")
   .option("--phase <n>", "Phase number", "1")
-  .action((spec: string, id: string, title: string, opts) => {
+  .option("--spawn", "Spawn agents for pending stories after creation")
+  .option("--parallel", "Run agents in parallel (use with --spawn)")
+  .option("--max <n>", "Max concurrent agents", "4")
+  .action(async (spec: string, id: string, title: string, opts) => {
     if (!spec) {
       console.log("Usage: codewright story <spec>              (list stories)");
       console.log("       codewright story <spec> <id> <title> (create story)");
+      console.log("       codewright story <spec> --spawn       (spawn agents for pending stories)");
       return;
     }
     if (id && title) {
@@ -161,12 +177,63 @@ program
         phase: opts.phase,
       });
       console.log(`✓ Story created at ${result.path}`);
+
+      // Optionally spawn agents for pending stories
+      if (opts.spawn) {
+        const spawnResult = await storySpawnCommand({
+          cwd: process.cwd(),
+          spec,
+          storyIds: opts.parallel ? undefined : [id],
+          parallel: opts.parallel,
+          maxConcurrent: parseInt(opts.max) || 4,
+        });
+        console.log(`  ${spawnResult.message}`);
+      }
     } else if (spec) {
-      // List stories
-      const stories = storyListCommand(process.cwd(), spec);
-      if (stories.length === 0) { console.log("No stories found."); return; }
-      console.log("Stories:");
-      for (const s of stories) console.log(`  ${s.id} | ${s.status} | ${s.title}`);
+      if (opts.spawn) {
+        // Spawn agents for pending stories
+        const spawnResult = await storySpawnCommand({
+          cwd: process.cwd(),
+          spec,
+          parallel: opts.parallel,
+          maxConcurrent: parseInt(opts.max) || 4,
+        });
+        console.log(spawnResult.message);
+      } else {
+        // List stories
+        const stories = storyListCommand(process.cwd(), spec);
+        if (stories.length === 0) { console.log("No stories found."); return; }
+        console.log("Stories:");
+        for (const s of stories) console.log(`  ${s.id} | ${s.status} | ${s.title}`);
+      }
+    }
+  });
+
+// ─── develop ────────────────────────────────────────────
+program
+  .command("develop")
+  .description("Orchestrate multiple stories with parallel subagents")
+  .argument("<spec>", "Spec slug")
+  .option("--stories <ids>", "Comma-separated story IDs (all ready if omitted)")
+  .option("--parallel", "Execute stories in parallel (default)")
+  .option("--sequential", "Execute stories one at a time")
+  .option("--max <n>", "Max concurrent agents", "4")
+  .action(async (spec: string, opts) => {
+    const storyIds = opts.stories ? opts.stories.split(",").map((s: string) => s.trim()) : undefined;
+    const result = await developCommand(process.cwd(), spec, {
+      storyIds,
+      parallel: !opts.sequential,
+      maxConcurrent: parseInt(opts.max) || 4,
+      sequential: opts.sequential,
+    });
+    console.log(result.message);
+    if (result.report.totalStories > 0) {
+      console.log(`  Duration: ${result.report.totalDurationMs}ms`);
+      console.log(`  Stories: ${result.report.successfulStories}/${result.report.totalStories} succeeded`);
+      if (result.report.errors.length > 0) {
+        console.log("  Errors:");
+        for (const err of result.report.errors) console.log(`    - ${err}`);
+      }
     }
   });
 
