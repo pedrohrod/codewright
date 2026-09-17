@@ -5,11 +5,12 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import prompts from "prompts";
 import {
-  formatAgentMenu,
   getAgentDefinition,
   parseAgentTargets,
-  parseInteractiveAgentSelection,
+  AGENT_DEFINITIONS,
+  AGENT_TARGETS,
   type AgentTarget,
 } from "../agents/registry.js";
 import { initCommand } from "./commands/init.js";
@@ -43,16 +44,26 @@ function getVersion(): string {
 
 async function selectAgentTargets(option?: string): Promise<AgentTarget[]> {
   if (option !== undefined) return parseAgentTargets(option);
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return [];
+  if (!process.stdin.isTTY) return [];
 
-  console.log(formatAgentMenu());
-  const prompt = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await prompt.question("> ");
-    return parseInteractiveAgentSelection(answer);
-  } finally {
-    prompt.close();
-  }
+  const { agents } = await prompts({
+    type: "multiselect",
+    name: "agents",
+    message: "Select AI agents (space to toggle, enter to confirm):",
+    choices: [
+      ...AGENT_DEFINITIONS.map(def => ({
+        title: def.label,
+        value: def.id,
+        description: def.adapter === "canonical" ? "universal core" : "native adapter",
+      })),
+      { title: "All agents", value: "__all__", description: "select all available agents" },
+    ],
+    hint: "Space to select • Enter to confirm • ↑↓ navigate",
+  });
+
+  if (!agents || agents.length === 0) return [];
+  if (agents.includes("__all__")) return [...AGENT_TARGETS];
+  return agents as AgentTarget[];
 }
 
 const program = new Command();

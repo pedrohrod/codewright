@@ -73,6 +73,8 @@ export function parseInteractiveAgentSelection(value: string): AgentTarget[] {
   const normalized = tokens.map((token) => {
     if (!/^\d+$/.test(token)) return token;
     const index = Number(token) - 1;
+    // Last option (All) maps to all agents
+    if (index === AGENT_TARGETS.length) return "all";
     if (index < 0 || index >= AGENT_TARGETS.length) {
       throw new Error(`Agent number '${token}' is outside the available range.`);
     }
@@ -87,5 +89,6 @@ export function formatAgentMenu(): string {
     const mode = definition.adapter === "canonical" ? "uses universal core" : "installs native adapter";
     lines.push(`  ${index + 1}. ${definition.label} — ${mode}`);
   });
+  lines.push(`  ${AGENT_DEFINITIONS.length + 1}. All — select all agents`);
   return lines.join("\n");
 }
