@@ -43,6 +43,7 @@ export const SKILL_NAMES = [
 export interface InitOptions {
   upgradeSkills?: boolean;
   agents?: AgentTarget[];
+  graphifyEnabled?: boolean;
 }
 
 interface DetectedStack {
@@ -182,13 +183,16 @@ Add your project-specific rules here. These rules are loaded by codewright skill
       : "";
     const lang = detected.project_language ? `\nproject_language: "${detected.project_language}"` : "";
     const strict = detected.strict_mode !== undefined ? `\nstrict_mode: ${detected.strict_mode}` : "";
+    const graphifyConfig = options.graphifyEnabled
+      ? `\ngraphify:\n  enabled: true\n  analysis_mode: code-only`
+      : "";
 
     const yaml = `codewright_version: "${config.codewright_version}"
 project_name: "${resolve(targetDir).split("/").pop() || "my-project"}"
 stack: "${detected.framework || "node"}"
 communication_language: "en"
 output_folder: ".codewright-output"
-context_file: ".codewright-output/project-context.md"${framework}${testRunner}${lintTools}${lang}${strict}
+context_file: ".codewright-output/project-context.md"${framework}${testRunner}${lintTools}${lang}${strict}${graphifyConfig}
 `;
     writeFileSync(configPath, yaml, "utf-8");
   }

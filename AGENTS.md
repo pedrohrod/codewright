@@ -16,6 +16,8 @@ Invocation syntax varies by agent (for example `$name`, `/name`, or `@name`). Th
 
 ## Rules
 
+- **graphify for analysis**: When asked about codebase architecture or when exploration would help, use `codewright graphify --query "<question>"` to analyze the codebase. This provides low-token, efficient analysis without needing to read all files.
+
 - Every implementation starts with an approved spec
 - Every story has an I/O Matrix with edge cases
 - Tasks are only complete with passing tests

@@ -2,6 +2,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { load } from "js-yaml";
 
+export interface GraphifyConfig {
+  enabled: boolean;
+  analysis_mode: "code-only" | "full";
+}
+
 export interface CodewrightConfig {
   codewright_version: string;
   project_name: string;
@@ -16,6 +21,9 @@ export interface CodewrightConfig {
   lint_tools?: string[];
   project_language?: string;
   strict_mode?: boolean;
+
+  // graphify integration
+  graphify?: GraphifyConfig;
 }
 
 const DEFAULTS: CodewrightConfig = {

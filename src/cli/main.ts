@@ -29,6 +29,7 @@ import { deployDockerfileCommand, deployDockerignoreCommand } from "./commands/d
 import { perfSetupCommand, perfRunCommand } from "./commands/perf.js";
 import { helpCommand } from "./commands/help.js";
 import { statusCommand } from "./commands/status.js";
+import { graphifyCommand } from "./commands/graphify.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -80,18 +81,35 @@ program
   .option("--dir <path>", "Target directory", ".")
   .option("--agents <targets>", "Comma-separated agents, 'all', or 'core'")
   .option("--upgrade-skills", "Replace installed bundled skills while preserving project customization")
+  .option("--graphify", "Enable graphify for codebase analysis")
+  .option("--no-graphify", "Disable graphify")
   .action(async (opts) => {
     try {
       const agents = await selectAgentTargets(opts.agents);
+
+      // Ask about graphify if not specified and in interactive mode
+      let graphifyEnabled = opts.graphify;
+      if (graphifyEnabled === undefined && process.stdin.isTTY) {
+        const { enableGraphify } = await prompts({
+          type: "confirm",
+          name: "enableGraphify",
+          message: "Enable graphify for codebase analysis? (free, no API key needed for code analysis)",
+          initial: false,
+        });
+        graphifyEnabled = enableGraphify;
+      }
+
       const result = initCommand(process.cwd(), opts.dir, {
         upgradeSkills: opts.upgradeSkills,
         agents,
+        graphifyEnabled,
       });
       console.log(`✓ Codewright initialized at ${result.codewrightDir}`);
       console.log(`  Output: ${result.outputDir}`);
       console.log("  Skills: .agents/skills/ (universal core)");
       const labels = result.agentTargets.map((target) => getAgentDefinition(target).label);
       console.log(`  Agents: ${labels.length > 0 ? labels.join(", ") : "core only"}`);
+      if (graphifyEnabled) console.log("  graphify: enabled (code-only mode, no API key needed)");
       if (result.adapterFiles.length > 0) console.log(`  Adapters: ${result.adapterFiles.length} files generated`);
       for (const warning of result.warnings) console.warn(`  Warning: ${warning}`);
       const d = result.detected;
@@ -431,6 +449,27 @@ program
   .action(() => {
     const result = statusCommand(process.cwd());
     console.log(result);
+  });
+
+// ─── graphify ───────────────────────────────────────────
+program
+  .command("graphify")
+  .description("Query codebase using graphify (enable with 'codewright init')")
+  .option("--query <text>", "Question about the codebase")
+  .option("--build", "Build the graph before querying")
+  .option("--budget <tokens>", "Token budget for query (default: 1500)", "1500")
+  .action((opts) => {
+    const result = graphifyCommand(process.cwd(), {
+      query: opts.query,
+      build: opts.build,
+      budget: parseInt(opts.budget) || 1500,
+    });
+    if (!result.success) {
+      console.error(`Error: ${result.message}`);
+      process.exitCode = 1;
+    } else {
+      console.log(result.message);
+    }
   });
 
 await program.parseAsync(process.argv);
