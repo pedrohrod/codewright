@@ -140,6 +140,29 @@ npx codewright story my-feature S001 "Create user form"
 npx codewright dev my-feature S001
 ```
 
+#### Parallel Execution with Subagents
+
+Implement multiple stories faster using parallel subagents:
+
+```bash
+# Implement all pending stories in parallel (up to 4 concurrent)
+npx codewright develop my-feature --parallel
+
+# Specific stories
+npx codewright develop my-feature --stories S001,S002,S003
+
+# Sequential (for stories with dependencies)
+npx codewright develop my-feature --sequential
+
+# Adjust max concurrent agents
+npx codewright develop my-feature --max 8
+
+# Spawn agents when creating a story
+npx codewright story my-feature S001 "Login" --spawn --parallel
+```
+
+Each subagent follows the TDD cycle (RED → GREEN → REFACTOR) independently and reports back when done.
+
 ### 5. Review
 
 ```bash
@@ -162,6 +185,10 @@ npx codewright review my-feature S001
 | `codewright spec <slug> --sync` | Sync spec with code (compare requirements vs implementation) |
 | `codewright story <spec>` | List stories for a spec |
 | `codewright story <spec> <id> "<title>"` | Create a story |
+| `codewright story <spec> --spawn [--parallel]` | Spawn agents for pending stories |
+| `codewright develop <spec> [--parallel] [--sequential]` | Orchestrate stories with parallel subagents |
+| `codewright develop <spec> --stories S001,S002` | Develop specific stories |
+| `codewright develop <spec> --max <n>` | Max concurrent agents (default: 4) |
 | `codewright dev <spec> <id>` | Start implementing a story |
 | `codewright review <spec> <id>` | Prepare code review |
 | `codewright commit <spec> <id> --dry-run` | Preview a story-scoped commit |
